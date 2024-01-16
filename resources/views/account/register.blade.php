@@ -47,7 +47,7 @@
         </div>
       @endif
     </div>
-    <div class="my-3 d-flex justify-content-center">
+    <div class="mt-3 d-flex justify-content-center">
     <div class="g-recaptcha" data-sitekey="6LdgDUIpAAAAAOJja_wDYX5OzfmUUEwIzcvR5dZy"></div>
     </div>
     <div class="d-flex flex-column justify-content-center w-100">
