@@ -16,6 +16,6 @@ class MailController extends Controller
         ];
 
         Mail::to('thi12a3qv2@gmail.com')->send(new IdentityAccount($mailData));
-        return $mailData;
+        dd('Mail sent successfully');
     }
 }

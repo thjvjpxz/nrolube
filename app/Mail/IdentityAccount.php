@@ -17,11 +17,11 @@ class IdentityAccount extends Mailable
     /**
      * Create a new message instance.
      */
-    public $data;
+    public $mailData;
     public function __construct($data)
     {
         //
-        $this->data = $data;
+        $this->mailData = $data;
     }
 
     /**
@@ -31,7 +31,6 @@ class IdentityAccount extends Mailable
     {
         return new Envelope(
             subject: 'Identity Account',
-            from: new Address('identifynrolube@nrolube.click', 'NroLube'),
         );
     }
 
@@ -41,7 +40,7 @@ class IdentityAccount extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'testmail',
+            view: 'testmail',
         );
     }
 
