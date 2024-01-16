@@ -1,0 +1,131 @@
+* {
+  font-family: Arial;
+  /* padding: 0 !important; */
+  /* margin: 0 !important; */
+  box-sizing: border-box !important;
+}
+
+.bg-secondary-color,
+.btn-secondary-color {
+  background-color: #f35805;
+}
+.bg-primary-color,
+.active-btn {
+  background-color: #ffaf4c !important;
+}
+.btn-primary-color {
+  background-color: #924c31;
+}
+.btn-nav:hover {
+  background-color: #924c31;
+  text-decoration: underline !important;
+}
+.text-primary-color {
+  color: #e73d00;
+}
+.btn-hover:hover {
+  background-color: #e14000 !important;
+  text-decoration: underline !important;
+}
+.btn-hover-underline:hover {
+  text-decoration: underline !important;
+}
+.width-max {
+  max-width: 630px;
+}
+.form-control:focus {
+  box-shadow: none;
+  border-color: #f35805;
+}
+.input-group-text {
+  color: #f35805;
+}
+
+@media only screen and (max-width: 500px) {
+  .width-max {
+    width: 100% !important; /* Đặt chiều rộng về 100% cho thiết bị nhỏ hơn */
+  }
+}
+
+/* -----------------------------MODAL---------------------------- */
+.modal#statusSuccessModal .modal-content,
+.modal#statusErrorsModal .modal-content {
+  border-radius: 30px;
+}
+.modal#statusSuccessModal .modal-content svg,
+.modal#statusErrorsModal .modal-content svg {
+  width: 100px;
+  display: block;
+  margin: 0 auto;
+}
+.modal#statusSuccessModal .modal-content .path,
+.modal#statusErrorsModal .modal-content .path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 0;
+}
+.modal#statusSuccessModal .modal-content .path.circle,
+.modal#statusErrorsModal .modal-content .path.circle {
+  -webkit-animation: dash 0.9s ease-in-out;
+  animation: dash 0.9s ease-in-out;
+}
+.modal#statusSuccessModal .modal-content .path.line,
+.modal#statusErrorsModal .modal-content .path.line {
+  stroke-dashoffset: 1000;
+  -webkit-animation: dash 0.95s 0.35s ease-in-out forwards;
+  animation: dash 0.95s 0.35s ease-in-out forwards;
+}
+.modal#statusSuccessModal .modal-content .path.check,
+.modal#statusErrorsModal .modal-content .path.check {
+  stroke-dashoffset: -100;
+  -webkit-animation: dash-check 0.95s 0.35s ease-in-out forwards;
+  animation: dash-check 0.95s 0.35s ease-in-out forwards;
+}
+
+@-webkit-keyframes dash {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@-webkit-keyframes dash {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@-webkit-keyframes dash-check {
+  0% {
+    stroke-dashoffset: -100;
+  }
+  100% {
+    stroke-dashoffset: 900;
+  }
+}
+@keyframes dash-check {
+  0% {
+    stroke-dashoffset: -100;
+  }
+  100% {
+    stroke-dashoffset: 900;
+  }
+}

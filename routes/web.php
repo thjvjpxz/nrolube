@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,5 +15,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('index');
+});
+
+Route::group(['prefix' => 'account', 'as' => 'account.'], function() {
+    Route::get('login', [AccountController::class, 'login'])->name('login');
+    Route::get('register', [AccountController::class, 'register'])->name('register');
+    Route::post('register', [AccountController::class, 'registerStore'])->name('register.store');
 });
