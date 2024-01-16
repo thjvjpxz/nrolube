@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,3 +24,5 @@ Route::group(['prefix' => 'account', 'as' => 'account.'], function() {
     Route::get('register', [AccountController::class, 'register'])->name('register');
     Route::post('register', [AccountController::class, 'registerStore'])->name('register.store');
 });
+
+Route::get('send-mail', [MailController::class, 'index'])->name('send.mail');
