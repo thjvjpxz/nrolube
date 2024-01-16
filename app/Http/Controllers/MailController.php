@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Mail\IdentifyMail;
+use App\Mail\IdentityAccount;
 use Illuminate\Support\Facades\Mail;
 
 class MailController extends Controller
@@ -14,7 +15,7 @@ class MailController extends Controller
             'body' => 'This is for testing email using smtp'
         ];
 
-        Mail::to('thi12a3qv2@gmail.com')->send(new IdentifyMail($mailData));
-        dd('Mail sent successfully');
+        Mail::to('thi12a3qv2@gmail.com')->send(new IdentityAccount($mailData));
+        return $mailData;
     }
 }
