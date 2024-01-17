@@ -3,7 +3,6 @@
 use App\Http\Controllers\AccountController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MailController;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -18,6 +17,12 @@ use App\Http\Controllers\MailController;
 Route::get('/', function () {
     return view('index');
 });
+Route::get('huongdan', function () {
+    return view('huongdan');
+})->name('huongdan');
+Route::get('naptien', function() {
+    return view('baotri');
+})->name('naptien');
 
 Route::group(['prefix' => 'account', 'as' => 'account.'], function () {
     Route::get('login', [AccountController::class, 'login'])->name('login');
@@ -31,7 +36,3 @@ Route::group(['prefix' => 'account', 'as' => 'account.'], function () {
         Route::get('logout', [AccountController::class, 'logout'])->name('logout');
     });
 });
-
-
-
-Route::get('send-mail', [MailController::class, 'index'])->name('send.mail');

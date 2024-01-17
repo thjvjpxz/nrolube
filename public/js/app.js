@@ -37,7 +37,7 @@ $(document).ready(function () {
     $(".btn-download").removeClass("active-btn");
     $(".btn-register").removeClass("active-btn");
     $(".btn-box").removeClass("active-btn");
-  } else if (currentUriPath === "/download") {
+  } else if (currentUriPath === "/huongdan") {
     $(".btn-download").addClass("active-btn");
     $(".btn-index").removeClass("active-btn");
     $(".btn-register").removeClass("active-btn");

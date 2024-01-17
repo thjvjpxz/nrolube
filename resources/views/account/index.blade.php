@@ -75,7 +75,7 @@
           </div>
           {{-- End Modal --}}
         @endif
-        <a href="{{ route('account.logout') }}" class="btn btn-secondary-color rounded-1">Nạp tiền</a>
+        <a href="{{ route('naptien') }}" class="btn btn-secondary-color rounded-1">Nạp tiền</a>
         @if ($account->gmail == null)
           <button type="button" data-bs-toggle="modal" data-bs-target="#addEmail{{ $account->id }}"
             class="btn btn-secondary-color rounded-1">Thêm email</button>

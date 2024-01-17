@@ -34,12 +34,13 @@
             NGỌC RỒNG LUBE
           </div>
           <div class="col-10 mx-auto d-flex gap-2 mb-3 flex-wrap justify-content-center">
-            <a href="/" class="btn-index py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">Trang chủ</a>
+            <a href="/" class="btn-index py-1 px-2 fs-6 btn btn-primary-color btn-nav text-white">Trang Chủ</a>
             <a href="{{ route('account.register') }}"
-              class="btn-register py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">Đăng ký</a>
-            <a href="/download" class="btn-download py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">...</a>
+              class="btn-register py-1 px-2 fs-6 btn btn-primary-color btn-nav text-white">Đăng Ký</a>
+            <a href="{{ route('huongdan') }}"
+              class="btn-download py-1 px-2 fs-6 btn btn-primary-color btn-nav text-white">Hướng Dẫn Tải</a>
             <a href="https://zalo.me/g/ukrchb490"
-              class="btn-box py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">Box Zalo</a>
+              class="btn-box py-1 px-2 fs-6 btn btn-primary-color btn-nav text-white">Box Zalo</a>
           </div>
           <div class="mx-3 pb-3">
             <img src="{{ asset('images/banner.png') }}" alt="banner" class="img-fluid" />
@@ -56,8 +57,6 @@
                 class="btn btn-primary-color text-white btn-nav px-3 py-1">Tải IOS</a>
               <a href="https://www.mediafire.com/file/l4x47qhp1yf0kzu/thijar.jar/file"
                 class="btn btn-primary-color text-white btn-nav px-3 py-1">Tải JAR</a>
-              <a href="https://drive.google.com/drive/folders/1HYyicCctaQSQp9vGDnGR6I4P0ZxH6dnX?usp=sharing"
-                class="btn btn-primary-color text-white btn-nav px-3 py-1">Hướng dẫn tải game cho IOS</a>
             </div>
           </div>
         </div>
