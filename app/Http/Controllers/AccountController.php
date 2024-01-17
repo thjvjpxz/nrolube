@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AccountController extends Controller
 {
@@ -12,6 +13,72 @@ class AccountController extends Controller
         $account = session('account');
         $account = Account::find($account->id);
         return view('account.index', compact('account'));
+    }
+    public function listItem(Request $request)
+    {
+        $id = $request->data;
+        $account = Account::find($id);
+        if ($account->is_admin != 1) {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Bạn không có quyền truy cập!');
+        } else {
+            $url = redirect()->route('account.showListItem');
+        }
+        return response()->json(['url' => $url->getTargetUrl()]);
+    }
+    public function showListItem()
+    {
+        $itemTemplate = DB::table('item_template')->get();
+        return view('account.listItem', compact('itemTemplate'));
+    }
+    public function findItem(Request $request)
+    {
+        $keyword = $request->keyword;
+        $keywords = '%' . $keyword . '%';
+        if ($keyword == "") {
+            $itemTemplate = DB::table('item_template')
+                ->select('id', 'NAME', 'icon_id', 'description', DB::raw("
+                    CASE 
+                        WHEN gender = 0 THEN 'Trái đất'
+                        WHEN gender = 1 THEN 'Namec'
+                        WHEN gender = 2 THEN 'Xayda'
+                        ELSE 'Tất cả' 
+                    END AS gender"))
+                ->get();
+        } else {
+            $itemTemplate = DB::table('item_template')
+                ->select('id', 'NAME', 'icon_id', 'description', DB::raw("
+                    CASE 
+                        WHEN gender = 0 THEN 'Trái đất'
+                        WHEN gender = 1 THEN 'Namec'
+                        WHEN gender = 2 THEN 'Xayda'
+                        ELSE 'Tất cả' 
+                    END AS gender"))
+                ->where('NAME', 'LIKE', $keywords)
+                ->orWhere('id', 'LIKE', $keywords)
+                ->get();
+        }
+        $htmls = '';
+        foreach ($itemTemplate as $item) {
+            if ($item->NAME == "")
+                continue;
+            $htmls .=
+                '
+                <tr>
+                    <td class="align-middle 1">' . $item->id . '</td>
+                    <td class="align-middle 2">' . $item->NAME . '</td>
+                    <td class="align-middle 3">' . $item->gender . '</td>
+                    <td class="align-middle 4">' . $item->icon_id . '</td>
+                    <td class="align-middle 5">' . $item->description . '</td>
+                </tr>';
+            // if ($item->gender == 0) {
+            //     $htmls .= 'Trái đất';
+            // } else if ($item->gender == 1) {
+            //     $htmls .= 'Namec';
+            // } else {
+            //     $htmls .= 'Xayda';
+            // }
+        }
+        return $htmls;
     }
     public function logout()
     {

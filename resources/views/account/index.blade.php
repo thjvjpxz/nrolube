@@ -107,6 +107,10 @@
           </div>
           {{-- End Modal --}}
         @endif
+        @if ($account->is_admin == 1)
+          <button type="button" data-id="{{ $account->id }}" id="btnListItem"
+            class="btn btn-secondary-color rounded-1">Danh sách item</button>
+        @endif
         <a href="{{ route('account.logout') }}" class="btn btn-secondary rounded-1">Đăng xuất</a>
       </div>
     </div>
@@ -126,8 +130,8 @@
             data: data
           },
           success: function(data) {
-            // window.location.href = data.url;
-            console.log(data);
+            window.location.href = data.url;
+            // console.log(data);
           },
           error: function(xhr) {
             console.log(xhr.responseText);
@@ -136,6 +140,7 @@
       });
     }
     ajaxAccount('#btnActive', "/account/activeAccount", $("#btnActive").data('id'));
+    ajaxAccount('#btnListItem', "/account/listItem", $("#btnListItem").data('id'));
 
     $("#btnAddEmail").on('click', function() {
       data = {
