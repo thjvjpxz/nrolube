@@ -27,6 +27,7 @@ Route::group(['prefix' => 'account', 'as' => 'account.'], function () {
     Route::group(['middleware' => 'checkLogin'], function () {
         Route::get('index', [AccountController::class, 'index'])->name('index');
         Route::post('activeAccount', [AccountController::class, 'activeAccount'])->name('activeAccount');
+        Route::post('addEmail', [AccountController::class, 'addEmail'])->name('addEmail');
         Route::get('logout', [AccountController::class, 'logout'])->name('logout');
     });
 });

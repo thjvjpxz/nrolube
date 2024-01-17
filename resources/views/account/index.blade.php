@@ -7,27 +7,31 @@
     <div class="card-header bg-secondary-color text-white fs-5 fw-bold">Thông tin tài khoản</div>
     <div class="card-body">
       <div class="row mx-3 mx-md-5">
-        <div class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1">
+        <div
+          class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1 border-end-0">
           Tài khoản
         </div>
         <div class="col-7 py-1 px-2 border-2 border border-primary-color rounded-end-1">{{ $account->username }}</div>
       </div>
       <div class="row mx-3 mx-md-5 mt-3">
-        <div class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1">
+        <div
+          class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1 border-end-0">
           Email
         </div>
         <div class="col-7 py-1 px-2 border-2 border border-primary-color rounded-end-1">
           {{ $account->gmail ?? 'Chưa có email' }}</div>
       </div>
       <div class="row mx-3 mx-md-5 mt-3">
-        <div class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1">
+        <div
+          class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1 border-end-0">
           Trạng thái
         </div>
         <div class="col-7 py-1 px-2 border-2 border border-primary-color rounded-end-1">
           {{ $account->active ? 'Đã kích hoạt' : 'Chưa kích hoạt' }}</div>
       </div>
       <div class="row mx-3 mx-md-5 mt-3">
-        <div class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1">
+        <div
+          class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1 border-end-0">
           Số dư
         </div>
         <div class="col-7 py-1 px-2 border-2 border border-primary-color rounded-end-1">
@@ -35,7 +39,8 @@
         </div>
       </div>
       <div class="row mx-3 mx-md-5 mt-3">
-        <div class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1">
+        <div
+          class="col-5 py-1 px-2 border-2 border border-primary-color bg-secondary-color text-white rounded-start-1 border-end-0">
           Tổng tiền đã nạp
         </div>
         <div class="col-7 py-1 px-2 border-2 border border-primary-color rounded-end-1">
@@ -46,10 +51,62 @@
     <div class="card-footer border-primary-color border-2 py-0">
       <div class="d-flex gap-1 flex-wrap justify-content-center my-3">
         @if ($account->active == 0)
-          <a id="btnActive" data-id="{{ $account->id }}" class="btn btn-success rounded-1">Kích hoạt tài khoản</a>
+          <button type="button" data-bs-toggle="modal" data-bs-target="#i{{ $account->id }}"
+            class="btn btn-secondary-color rounded-1">Kích hoạt tài khoản</button>
+          {{-- Modal --}}
+          <div class="modal fade" id="i{{ $account->id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header bg-secondary-color text-white">
+                  <h5 class="modal-title">Xác nhận kích hoạt</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  Bạn có chắc chắn muốn kích hoạt tài khoản <span
+                    class="text-danger fw-bold">{{ $account->username }}</span>?
+                </div>
+                <div class="modal-footer border-primary-color">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                  <button type="button" id="btnActive" data-id="{{ $account->id }}"
+                    class="btn btn-secondary-color">Kích hoạt</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {{-- End Modal --}}
         @endif
-        <a href="{{ route('account.logout') }}" class="btn btn-success rounded-1">Nạp tiền</a>
-        <a href="{{ route('account.logout') }}" class="btn btn-success rounded-1">Thêm email</a>
+        <a href="{{ route('account.logout') }}" class="btn btn-secondary-color rounded-1">Nạp tiền</a>
+        @if ($account->gmail == null)
+          <button type="button" data-bs-toggle="modal" data-bs-target="#addEmail{{ $account->id }}"
+            class="btn btn-secondary-color rounded-1">Thêm email</button>
+          {{-- Modal --}}
+          <div class="modal fade" id="addEmail{{ $account->id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header bg-secondary-color text-white">
+                  <h5 class="modal-title">Thêm email mới</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="input-group">
+                    <span class="input-group-text px-4 bg-secondary-color border-primary-color">@</span>
+                    <div class="form-floating">
+                      <input type="email" class="form-control border-primary-color" id="inputEmailAdd"
+                        placeholder="Email">
+                      <label for="inputEmailAdd">Địa chỉ email</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer border-primary-color">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                  <button type="button" id="btnAddEmail" data-id="{{ $account->id }}"
+                    class="btn btn-secondary-color">Thêm</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {{-- End Modal --}}
+        @endif
         <a href="{{ route('account.logout') }}" class="btn btn-secondary rounded-1">Đăng xuất</a>
       </div>
     </div>
@@ -59,17 +116,45 @@
 @section('script')
 <script type="text/javascript">
   $(document).ready(function() {
-    $("#btnActive").on('click', function() {
+    function ajaxAccount(btn, url, data) {
+      $(btn).on('click', function() {
+        $.ajax({
+          url: url,
+          type: "POST",
+          data: {
+            _token: $("meta[name='csrf-token']").attr("content"),
+            data: data
+          },
+          success: function(data) {
+            // window.location.href = data.url;
+            console.log(data);
+          },
+          error: function(xhr) {
+            console.log(xhr.responseText);
+          }
+        });
+      });
+    }
+    ajaxAccount('#btnActive', "/account/activeAccount", $("#btnActive").data('id'));
+
+    $("#btnAddEmail").on('click', function() {
+      data = {
+        id: $("#btnAddEmail").data('id'),
+        email: $("#inputEmailAdd").val()
+      };
       $.ajax({
-        url: "/account/activeAccount",
-        type: "POST",
+        url: "/account/addEmail",
+        type: "post",
         data: {
           _token: $("meta[name='csrf-token']").attr("content"),
-          id: $(this).data('id')
+          data: data
         },
         success: function(data) {
           window.location.href = data.url;
         },
+        error: function(xhr) {
+          console.log(xhr.responseText);
+        }
       });
     });
   });

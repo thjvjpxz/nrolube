@@ -8,6 +8,10 @@
 .bg-secondary-color,
 .btn-secondary-color {
   background-color: #f35805;
+  color: #fff !important;
+}
+.btn-secondary-color:hover {
+  background-color: #8f3403 !important;
 }
 .bg-primary-color,
 .active-btn {
@@ -18,14 +22,10 @@
 }
 .btn-nav:hover {
   background-color: #924c31;
-  text-decoration: underline !important;
+  text-decoration: underline !important
 }
 .text-primary-color {
   color: #e73d00;
-}
-.btn-hover:hover {
-  background-color: #e14000 !important;
-  text-decoration: underline !important;
 }
 .btn-hover-underline:hover {
   text-decoration: underline !important;

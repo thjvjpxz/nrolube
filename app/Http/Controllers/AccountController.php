@@ -28,16 +28,14 @@ class AccountController extends Controller
     }
     public function activeAccount(Request $request)
     {
-        $account = Account::find($request->id);
-        if (is_null($account)) {
-            $url = redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản không tồn tại!');
-        }
-        if ($account->active == 1) {
-            $url = redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản đã được kích hoạt!');
-        }
+        $account = Account::find($request->data);
         $cost = 10000;
         $moneyHave = $account->vnd;
-        if ($moneyHave < $cost) {
+        if (is_null($account)) {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản không tồn tại!');
+        } else if ($account->active == 1) {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản đã được kích hoạt!');
+        } else if ($moneyHave < $cost) {
             $url = redirect()->back()->with('type', 'danger')->with('message', 'Bạn không đủ tiền để kích hoạt tài khoản!');
         } else {
             $account->vnd = $moneyHave - $cost;
@@ -46,6 +44,30 @@ class AccountController extends Controller
             $url = redirect()->back()->with('type', 'success')->with('message', 'Kích hoạt tài khoản thành công!');
         }
         return response()->json(['url' => $url->getTargetUrl()]);
+    }
+    public function addEmail(Request $request)
+    {
+        $account = Account::find($request->data['id']);
+        $email = $request->data['email'];
+        $url = "";
+        if (is_null($account)) {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản không tồn tại!');
+        } else if ($email == "") {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Email không được để trống!');
+        } else if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Email không đúng định dạng!');
+        } else {
+            $checkExist = Account::where('gmail', $email)->first();
+            if (!is_null($checkExist)) {
+                $url = redirect()->back()->with('type', 'danger')->with('message', 'Email đã tồn tại!');
+            } else {
+                $account->gmail = $email;
+                $account->save();
+                $url = redirect()->back()->with('type', 'success')->with('message', 'Thêm email thành công!');
+            }
+        }
+        return response()->json(['url' => $url->getTargetUrl()]);
+        // return response()->json(['url' => $email]);
     }
     public function loginStore(Request $request)
     {
