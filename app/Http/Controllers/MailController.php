@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Mail\IdentifyMail;
 use App\Mail\IdentityAccount;
 use Illuminate\Support\Facades\Mail;
 

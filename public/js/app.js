@@ -1,7 +1,9 @@
 $(document).ready(function () {
   const toastLiveExample = $('#liveToast');
+  if (toastLiveExample.length > 0 ) {
   const toastBootstrap = new bootstrap.Toast(toastLiveExample.get(0));
   toastBootstrap.show();
+  }
 
   if (top.location != self.location) {
     top.location = self.location
@@ -51,9 +53,5 @@ $(document).ready(function () {
   //     event.preventDefault();
   //   }
   // });
-
-  $(".confirm-modal").click(function () {
-    window.location.href = "/register";
-  });
 
 });

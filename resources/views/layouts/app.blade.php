@@ -9,6 +9,7 @@
   <meta name="keywords" content="nrolube, ngọc rồng lậu, game ngọc rồng lậu, nro lậu, nr lậu">
   <meta name="description"
     content="Website chính thức của Ngọc rồng Lube – Game Bay Vien Ngoc Rong Mobile nhập vai trực tuyến trên máy tính và điện thoại về Game 7 Viên Ngọc Rồng hấp dẫn nhất hiện nay!" />
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrit6y="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -34,7 +35,8 @@
           </div>
           <div class="col-10 mx-auto d-flex gap-2 mb-3 flex-wrap justify-content-center">
             <a href="/" class="btn-index py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">Trang chủ</a>
-            <a href="{{route('account.register')}}" class="btn-register py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">Đăng ký</a>
+            <a href="{{ route('account.register') }}"
+              class="btn-register py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">Đăng ký</a>
             <a href="/download" class="btn-download py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">...</a>
             <a href="https://zalo.me/g/ukrchb490"
               class="btn-box py-1 px-4 fs-6 btn btn-primary-color btn-nav text-white">Box Zalo</a>
@@ -102,6 +104,7 @@
   <script src="{{ asset('js/app.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+  @yield('script')
 </body>
 
 </html>

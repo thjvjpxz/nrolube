@@ -7,13 +7,68 @@ use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
-    public function register() {
+    public function index()
+    {
+        $account = session('account');
+        $account = Account::find($account->id);
+        return view('account.index', compact('account'));
+    }
+    public function logout()
+    {
+        session()->forget('account');
+        return redirect()->route('account.login')->with('type', 'success')->with('message', 'Đăng xuất thành công!');
+    }
+    public function register()
+    {
         return view('account.register')->with('type', 'success')->with('message', 'You have successfully registered!');
     }
-    public function login() {
+    public function login()
+    {
         return view('account.login');
     }
-    public function registerStore(Request $request) {
+    public function activeAccount(Request $request)
+    {
+        $account = Account::find($request->id);
+        if (is_null($account)) {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản không tồn tại!');
+        }
+        if ($account->active == 1) {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản đã được kích hoạt!');
+        }
+        $cost = 10000;
+        $moneyHave = $account->vnd;
+        if ($moneyHave < $cost) {
+            $url = redirect()->back()->with('type', 'danger')->with('message', 'Bạn không đủ tiền để kích hoạt tài khoản!');
+        } else {
+            $account->vnd = $moneyHave - $cost;
+            $account->active = 1;
+            $account->save();
+            $url = redirect()->back()->with('type', 'success')->with('message', 'Kích hoạt tài khoản thành công!');
+        }
+        return response()->json(['url' => $url->getTargetUrl()]);
+    }
+    public function loginStore(Request $request)
+    {
+        $recaptcha = $request->input('g-recaptcha-response');
+        if (is_null($recaptcha)) {
+            return redirect()->back()->with('type', 'danger')->with('message', 'Vui lòng xác nhận captcha!');
+        }
+        $request->validate([
+            'username' => 'required',
+            'password' => 'required'
+        ], [
+            'username.required' => 'Không được để trống tài khoản!',
+            'password.required' => 'Không được để trống mật khẩu!'
+        ]);
+        $account = Account::where('username', $request->username)->where('password', $request->password)->first();
+        if (is_null($account)) {
+            return redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản hoặc mật khẩu không chính xác!');
+        }
+        session(['account' => $account]);
+        return redirect()->route('account.index')->with('type', 'success')->with('message', 'Đăng nhập thành công!');
+    }
+    public function registerStore(Request $request)
+    {
         $recaptcha = $request->input('g-recaptcha-response');
         if (is_null($recaptcha)) {
             return redirect()->back()->with('type', 'danger')->with('message', 'Vui lòng xác nhận captcha!');

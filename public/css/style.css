@@ -40,6 +40,9 @@
 .input-group-text {
   color: #f35805;
 }
+.border-primary-color {
+  border-color: #f35805 !important;
+}
 
 @media only screen and (max-width: 500px) {
   .width-max {
