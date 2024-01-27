@@ -63,7 +63,7 @@
                 </div>
                 <div class="modal-body">
                   Bạn có chắc chắn muốn kích hoạt tài khoản <span
-                    class="text-danger fw-bold">{{ $account->username }}</span>?
+                    class="text-danger fw-bold">{{ $account->username }}</span>? (Bạn cần có 10.000 VNĐ trong tài khoản)
                 </div>
                 <div class="modal-footer border-primary-color">
                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
