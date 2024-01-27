@@ -162,6 +162,16 @@ class AccountController extends Controller
         if (is_null($recaptcha)) {
             return redirect()->back()->with('type', 'danger')->with('message', 'Vui lòng xác nhận captcha!');
         }
+        $ip = $request->ip();
+        $check = DB::table('history_register_ip')->where('ip_address', $ip)->first();
+        if (!is_null($check) && $check->count_register >= 3) {
+            return redirect()->back()->with('type', 'danger')->with('message', 'Bạn đã đăng ký quá số lần cho phép!');
+        } else if (!is_null($check) && $check->count_register < 3) {
+            $count = $check->count_register + 1;
+            DB::table('history_register_ip')->where('ip_address', $ip)->update(['count_register' => $count]);
+        } else {
+            DB::table('history_register_ip')->insert(['ip_address' => $ip, 'count_register' => 1]);
+        }
         $request->validate([
             'username' => 'required|min:3|max:255|unique:account,username',
             'gmail' => [
