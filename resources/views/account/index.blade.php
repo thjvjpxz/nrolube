@@ -48,8 +48,39 @@
         </div>
       </div>
     </div>
+
     <div class="card-footer border-primary-color border-2 py-0">
       <div class="d-flex gap-1 flex-wrap justify-content-center my-3">
+        {{-- Đổi tiền --}}
+        <button type="button" data-bs-toggle="modal" data-bs-target="#i{{ $account->id }}"
+          class="btn btn-secondary-color rounded-1">Đổi</button>
+        {{-- Modal --}}
+        <div class="modal fade" id="i{{ $account->id }}" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-secondary-color text-white">
+                <h5 class="modal-title">Chuyển tiền sang coin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div class="input-group mt-3">
+                  <span class="input-group-text px-4 bg-secondary-color border-primary-color">Số tiền muốn chuyển</span>
+                  <div class="form-floating">
+                    <input type="text" class="form-control border-primary-color" id="inputSoTienDoi"
+                      placeholder="Số tiền">
+                    <label for="inputSoTienDoi">Số tiền</label>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer border-primary-color">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" id="btnDoiTien" data-id="{{ $account->id }}"
+                  class="btn btn-secondary-color">Đổi</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {{-- End Modal --}}
         @if ($account->active == 0)
           <button type="button" data-bs-toggle="modal" data-bs-target="#i{{ $account->id }}"
             class="btn btn-secondary-color rounded-1">Kích hoạt tài khoản</button>
@@ -63,7 +94,8 @@
                 </div>
                 <div class="modal-body">
                   Bạn có chắc chắn muốn kích hoạt tài khoản <span
-                    class="text-danger fw-bold">{{ $account->username }}</span>? (Bạn cần có 10.000 VNĐ trong tài khoản)
+                    class="text-danger fw-bold">{{ $account->username }}</span>? (Bạn cần có 10.000 VNĐ trong tài
+                  khoản)
                 </div>
                 <div class="modal-footer border-primary-color">
                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
@@ -142,8 +174,7 @@
                 </div>
                 <div class="modal-footer border-primary-color">
                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                  <button type="button" id="btnCongTien"
-                    class="btn btn-secondary-color">Cộng</button>
+                  <button type="button" id="btnCongTien" class="btn btn-secondary-color">Cộng</button>
                 </div>
               </div>
             </div>
@@ -208,6 +239,26 @@
       };
       $.ajax({
         url: "/account/congTien",
+        type: "post",
+        data: {
+          _token: $("meta[name='csrf-token']").attr("content"),
+          data: data
+        },
+        success: function(data) {
+          window.location.href = data.url;
+        },
+        error: function(xhr) {
+          console.log(xhr.responseText);
+        }
+      });
+    });
+    $("#btnDoiTien").on('click', function() {
+      data = {
+        id: $("#btnDoiTien").data('id'),
+        SoTienDoi: $("#inputSoTienDoi").val()
+      };
+      $.ajax({
+        url: "/account/doiTien",
         type: "post",
         data: {
           _token: $("meta[name='csrf-token']").attr("content"),

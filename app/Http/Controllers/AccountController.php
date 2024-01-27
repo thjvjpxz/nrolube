@@ -112,6 +112,25 @@ class AccountController extends Controller
         }
         return response()->json(['url' => $url->getTargetUrl()]);
     }
+    public function doiTien(Request $request) {
+        $id = $request->data['id'];
+        $soTienDoi = $request->data['SoTienDoi'];
+        $account = Account::find($id);
+        if (is_null($account)) {
+            return response()->json(['url' => redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản không tồn tại!')->getTargetUrl()]);
+        }
+        if ($account->vnd < 10000) {
+            return response()->json(['url' => redirect()->back()->with('type', 'danger')->with('message', 'Phải đổi ít nhất 10000VNĐ!')->getTargetUrl()]);
+        }
+        if ($account->vnd < $soTienDoi) {
+            return response()->json(['url' => redirect()->back()->with('type', 'danger')->with('message', 'Bạn không đủ tiền để đổi!')->getTargetUrl()]);
+        }
+        $account->vnd = $account->vnd - $soTienDoi;
+        $account->coin += $soTienDoi;
+        $account->save();
+        return response()->json(['url' => redirect()->back()->with('type', 'success')->with('message', 'Đổi tiền thành công!')->getTargetUrl()]);
+
+    }
     public function addEmail(Request $request)
     {
         $account = Account::find($request->data['id']);
@@ -206,6 +225,9 @@ class AccountController extends Controller
         $taikhoan = $request->data['TaiKhoan'];
         $soTien = $request->data['SoTien'];
         $account = Account::where('username', $taikhoan)->first();
+        if (is_null($account)) {
+            return response()->json(['url' => redirect()->back()->with('type', 'danger')->with('message', 'Tài khoản không tồn tại!')->getTargetUrl()]);
+        }
         $account->vnd = $account->vnd + $soTien;
         $account->save();
         return response()->json(['url' => redirect()->back()->with('type', 'success')->with('message', 'Cộng tiền thành công!')->getTargetUrl()]);
