@@ -52,10 +52,10 @@
     <div class="card-footer border-primary-color border-2 py-0">
       <div class="d-flex gap-1 flex-wrap justify-content-center my-3">
         {{-- Đổi tiền --}}
-        <button type="button" data-bs-toggle="modal" data-bs-target="#i{{ $account->id }}"
+        <button type="button" data-bs-toggle="modal" data-bs-target="#iDoi{{ $account->id }}"
           class="btn btn-secondary-color rounded-1">Đổi</button>
         {{-- Modal --}}
-        <div class="modal fade" id="i{{ $account->id }}" tabindex="-1">
+        <div class="modal fade" id="iDoi{{ $account->id }}" tabindex="-1">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
               <div class="modal-header bg-secondary-color text-white">
@@ -258,7 +258,7 @@
         SoTienDoi: $("#inputSoTienDoi").val()
       };
       $.ajax({
-        url: "/account/doiTien",
+        url: "/account/doiTienNe",
         type: "post",
         data: {
           _token: $("meta[name='csrf-token']").attr("content"),
