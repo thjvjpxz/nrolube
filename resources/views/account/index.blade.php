@@ -110,6 +110,45 @@
         @if ($account->is_admin == 1)
           <button type="button" data-id="{{ $account->id }}" id="btnListItem"
             class="btn btn-secondary-color rounded-1">Danh sách item</button>
+
+          {{-- Nap tien --}}
+          <button type="button" data-bs-toggle="modal" data-bs-target="#i{{ $account->id }}"
+            class="btn btn-secondary-color rounded-1">Cộng tiền</button>
+          {{-- Modal --}}
+          <div class="modal fade" id="i{{ $account->id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header bg-secondary-color text-white">
+                  <h5 class="modal-title">Cộng tiền</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="input-group">
+                    <span class="input-group-text px-4 bg-secondary-color border-primary-color">Tài khoản</span>
+                    <div class="form-floating">
+                      <input type="text" class="form-control border-primary-color" id="inputTaiKhoan"
+                        placeholder="Tài khoản">
+                      <label for="inputTaiKhoan">Tài khoản</label>
+                    </div>
+                  </div>
+                  <div class="input-group mt-3">
+                    <span class="input-group-text px-4 bg-secondary-color border-primary-color">Số tiền</span>
+                    <div class="form-floating">
+                      <input type="text" class="form-control border-primary-color" id="inputSoTien"
+                        placeholder="Số tiền">
+                      <label for="inputSoTien">Số tiền</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer border-primary-color">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                  <button type="button" id="btnCongTien"
+                    class="btn btn-secondary-color">Cộng</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {{-- End Modal --}}
         @endif
         <a href="{{ route('account.logout') }}" class="btn btn-secondary rounded-1">Đăng xuất</a>
       </div>
@@ -149,6 +188,26 @@
       };
       $.ajax({
         url: "/account/addEmail",
+        type: "post",
+        data: {
+          _token: $("meta[name='csrf-token']").attr("content"),
+          data: data
+        },
+        success: function(data) {
+          window.location.href = data.url;
+        },
+        error: function(xhr) {
+          console.log(xhr.responseText);
+        }
+      });
+    });
+    $("#btnCongTien").on('click', function() {
+      data = {
+        TaiKhoan: $("#inputTaiKhoan").val(),
+        SoTien: $("#inputSoTien").val()
+      };
+      $.ajax({
+        url: "/account/congTien",
         type: "post",
         data: {
           _token: $("meta[name='csrf-token']").attr("content"),

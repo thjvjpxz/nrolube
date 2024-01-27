@@ -33,6 +33,7 @@ Route::group(['prefix' => 'account', 'as' => 'account.'], function () {
         Route::get('index', [AccountController::class, 'index'])->name('index');
         Route::post('activeAccount', [AccountController::class, 'activeAccount'])->name('activeAccount');
         Route::post('listItem', [AccountController::class, 'listItem'])->name('listItem')->middleware('checkAdmin');
+        Route::post('congTien', [AccountController::class, 'congTien'])->name('congTien')->middleware('checkAdmin');
         Route::get('showListItem', [AccountController::class, 'showListItem'])->name('showListItem')->middleware('checkAdmin');
         Route::get('findItem', [AccountController::class, 'findItem'])->name('findItem')->middleware('checkAdmin');
         Route::post('addEmail', [AccountController::class, 'addEmail'])->name('addEmail');

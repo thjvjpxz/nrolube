@@ -202,4 +202,12 @@ class AccountController extends Controller
         $account->save();
         return redirect()->route('account.login')->with('type', 'success')->with('message', 'Đăng ký tài khoản thành công!');
     }
+    public function congTien(Request $request) {
+        $taikhoan = $request->data['TaiKhoan'];
+        $soTien = $request->data['SoTien'];
+        $account = Account::where('username', $taikhoan)->first();
+        $account->vnd = $account->vnd + $soTien;
+        $account->save();
+        return response()->json(['url' => redirect()->back()->with('type', 'success')->with('message', 'Cộng tiền thành công!')->getTargetUrl()]);
+    }
 }
