@@ -144,10 +144,10 @@
             class="btn btn-secondary-color rounded-1">Danh sách item</button>
 
           {{-- Nap tien --}}
-          <button type="button" data-bs-toggle="modal" data-bs-target="#i{{ $account->id }}"
+          <button type="button" data-bs-toggle="modal" data-bs-target="#iCong{{ $account->id }}"
             class="btn btn-secondary-color rounded-1">Cộng tiền</button>
           {{-- Modal --}}
-          <div class="modal fade" id="i{{ $account->id }}" tabindex="-1">
+          <div class="modal fade" id="iCong{{ $account->id }}" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
               <div class="modal-content">
                 <div class="modal-header bg-secondary-color text-white">
