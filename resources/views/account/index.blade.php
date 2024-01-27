@@ -82,10 +82,10 @@
         </div>
         {{-- End Modal --}}
         @if ($account->active == 0)
-          <button type="button" data-bs-toggle="modal" data-bs-target="#i{{ $account->id }}"
+          <button type="button" data-bs-toggle="modal" data-bs-target="#iActive{{ $account->id }}"
             class="btn btn-secondary-color rounded-1">Kích hoạt tài khoản</button>
           {{-- Modal --}}
-          <div class="modal fade" id="i{{ $account->id }}" tabindex="-1">
+          <div class="modal fade" id="iActive{{ $account->id }}" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
               <div class="modal-content">
                 <div class="modal-header bg-secondary-color text-white">
