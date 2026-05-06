@@ -1,0 +1,26 @@
+# Build outputs (NetBeans/Ant)
+/build/
+/dist/
+/nbproject/private/
+/nbproject/build-impl.xml
+
+# Java artifacts
+*.class
+*.jar
+*.war
+*.ear
+
+# Runtime/log artifacts
+*.log
+hs_err_pid*
+replay_pid*
+
+# IDE/local settings
+/.idea/
+*.iml
+/.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+data
