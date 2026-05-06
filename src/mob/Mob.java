@@ -612,7 +612,10 @@ public class Mob {
 
         // Map 5, 13 - Bình nước (cần check itemEvent.canDropBinhNuoc)
         if (mapid == 5 || mapid == 13) {
-            Player pl = player.isPet ? ((Pet) player).master : player;
+            Player pl = player;
+            if (player.isPet) {
+                pl = ((Pet) player).master;
+            }
             if (Util.isTrue(1, 500)) {
                 if (pl.itemEvent != null && pl.itemEvent.canDropBinhNuoc(100)) {
                     list.add(new ItemMap(zone, 456, 1, x, yEnd, pl.id));
@@ -622,7 +625,10 @@ public class Mob {
 
         // Sự kiện 8/3 - Cần check itemEvent.canDropHoaHong
         if (EventManager.INTERNATIONAL_WOMANS_DAY) {
-            Player pl = player.isPet ? ((Pet) player).master : player;
+            Player pl = player;
+            if (player.isPet) {
+                pl = ((Pet) player).master;
+            }
             if (Util.isTrue(1 * pt4la, 50)) {
                 if (pl.itemEvent != null && pl.itemEvent.canDropHoaHong(100)) {
                     list.add(new ItemMap(zone, 610, 1, x, yEnd, player.id));
