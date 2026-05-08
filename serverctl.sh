@@ -23,6 +23,8 @@ MYSQL_PORT="3306"
 MYSQL_DB="tomahoc_db"
 MYSQL_USER="root"
 MYSQL_PASS="root"
+DOCKER_COMPOSE_FILE="docker-compose.yml"
+DOCKER_DB_SERVICE="mysql"
 
 print_header() {
   echo "======================================"
@@ -34,10 +36,16 @@ usage() {
   cat <<'EOF'
 Usage:
   ./serverctl.sh run
+  ./serverctl.sh run-docker
   ./serverctl.sh start
+  ./serverctl.sh start-docker
   ./serverctl.sh stop
   ./serverctl.sh status
   ./serverctl.sh logs
+  ./serverctl.sh docker-up
+  ./serverctl.sh docker-down
+  ./serverctl.sh docker-status
+  ./serverctl.sh docker-logs
   ./serverctl.sh menu
 
 Notes:
@@ -46,7 +54,7 @@ Notes:
   - menu  : minimal interactive menu
 
 Advanced commands:
-  ./serverctl.sh setup | check | build | mysql | restart
+  ./serverctl.sh setup | check | build | mysql | restart | docker-up | docker-down | docker-status | docker-logs
 EOF
 }
 
@@ -112,6 +120,29 @@ check_requirements() {
 ensure_java_and_ant() {
   install_if_missing "openjdk-17-jdk" "java"
   install_if_missing "ant" "ant"
+}
+
+ensure_docker_compose() {
+  if ! has_cmd docker; then
+    echo "[Docker] docker command not found. Please install Docker first."
+    exit 1
+  fi
+  if docker compose version >/dev/null 2>&1; then
+    return
+  fi
+  if has_cmd docker-compose; then
+    return
+  fi
+  echo "[Docker] docker compose plugin (or docker-compose) not found."
+  exit 1
+}
+
+docker_compose() {
+  if docker compose version >/dev/null 2>&1; then
+    docker compose "$@"
+  else
+    docker-compose "$@"
+  fi
 }
 
 resolve_jdk_home() {
@@ -365,6 +396,38 @@ EOF
   echo "[MySQL] Ready."
 }
 
+mysql_init_docker() {
+  local saved_host saved_port
+  saved_host="$MYSQL_HOST"
+  saved_port="$MYSQL_PORT"
+
+  MYSQL_HOST="127.0.0.1"
+  MYSQL_PORT="3307"
+  install_if_missing "mysql-client" "mysql"
+  prompt_mysql_settings
+
+  if [[ "$MYSQL_USER" == *"'"* || "$MYSQL_PASS" == *"'"* || "$MYSQL_DB" == *"'"* ]]; then
+    echo "[MySQL] user/pass/db cannot contain single quote (')."
+    exit 1
+  fi
+
+  if ! check_mysql_config_match; then
+    write_mysql_config
+  fi
+
+  echo "[MySQL] Testing connection to Docker DB..."
+  if ! MYSQL_PWD="$MYSQL_PASS" mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -e "SELECT 1;" >/dev/null 2>&1; then
+    echo "[MySQL] Connection test failed for user '${MYSQL_USER}'."
+    echo "Check docker logs: ./serverctl.sh docker-logs"
+    MYSQL_HOST="$saved_host"
+    MYSQL_PORT="$saved_port"
+    exit 1
+  fi
+
+  ensure_mysql_seeded
+  echo "[MySQL] Docker DB ready."
+}
+
 parse_ram_to_mib() {
   local raw="${1// /}"
   raw="${raw,,}"
@@ -453,6 +516,46 @@ start_java_background() {
   fi
 }
 
+docker_up() {
+  ensure_docker_compose
+  if [[ ! -f "$DOCKER_COMPOSE_FILE" ]]; then
+    echo "[Docker] Missing ${DOCKER_COMPOSE_FILE}"
+    exit 1
+  fi
+  echo "[Docker] Starting ${DOCKER_DB_SERVICE}..."
+  docker_compose -f "$DOCKER_COMPOSE_FILE" up -d "$DOCKER_DB_SERVICE"
+  echo "[Docker] Started."
+}
+
+docker_down() {
+  ensure_docker_compose
+  if [[ ! -f "$DOCKER_COMPOSE_FILE" ]]; then
+    echo "[Docker] Missing ${DOCKER_COMPOSE_FILE}"
+    exit 1
+  fi
+  echo "[Docker] Stopping stack..."
+  docker_compose -f "$DOCKER_COMPOSE_FILE" down
+  echo "[Docker] Stopped."
+}
+
+docker_status() {
+  ensure_docker_compose
+  if [[ ! -f "$DOCKER_COMPOSE_FILE" ]]; then
+    echo "[Docker] Missing ${DOCKER_COMPOSE_FILE}"
+    exit 1
+  fi
+  docker_compose -f "$DOCKER_COMPOSE_FILE" ps
+}
+
+docker_logs() {
+  ensure_docker_compose
+  if [[ ! -f "$DOCKER_COMPOSE_FILE" ]]; then
+    echo "[Docker] Missing ${DOCKER_COMPOSE_FILE}"
+    exit 1
+  fi
+  docker_compose -f "$DOCKER_COMPOSE_FILE" logs -f "$DOCKER_DB_SERVICE"
+}
+
 prepare_and_run() {
   ensure_java_and_ant
   build_ant
@@ -465,6 +568,24 @@ prepare_and_start() {
   ensure_java_and_ant
   build_ant
   mysql_init
+  choose_java_memory
+  start_java_background
+}
+
+prepare_and_run_with_docker() {
+  ensure_java_and_ant
+  build_ant
+  docker_up
+  mysql_init_docker
+  choose_java_memory
+  run_java_foreground
+}
+
+prepare_and_start_with_docker() {
+  ensure_java_and_ant
+  build_ant
+  docker_up
+  mysql_init_docker
   choose_java_memory
   start_java_background
 }
@@ -524,9 +645,11 @@ menu() {
     print_header
     echo "1) Run full pipeline (foreground)"
     echo "2) Start full pipeline (background)"
-    echo "3) Status"
-    echo "4) Logs"
-    echo "5) Stop"
+    echo "3) Run full pipeline + Docker DB (foreground)"
+    echo "4) Start full pipeline + Docker DB (background)"
+    echo "5) Status"
+    echo "6) Logs"
+    echo "7) Stop"
     echo "9) Advanced options"
     echo "0) Exit"
     echo
@@ -534,9 +657,11 @@ menu() {
     case "$choice" in
       1) prepare_and_run ;;
       2) prepare_and_start ;;
-      3) status_server ;;
-      4) show_logs ;;
-      5) stop_server ;;
+      3) prepare_and_run_with_docker ;;
+      4) prepare_and_start_with_docker ;;
+      5) status_server ;;
+      6) show_logs ;;
+      7) stop_server ;;
       9)
         echo "--- Advanced ---"
         echo "a) setup  (install packages)"
@@ -544,6 +669,10 @@ menu() {
         echo "c) build  (ant clean jar)"
         echo "d) mysql  (setup + sync config)"
         echo "e) restart"
+        echo "f) docker up"
+        echo "g) docker down"
+        echo "h) docker status"
+        echo "i) docker logs"
         read -rp "Choose advanced option: " adv
         case "$adv" in
           a) setup_ubuntu ;;
@@ -551,6 +680,10 @@ menu() {
           c) build_ant ;;
           d) mysql_init ;;
           e) restart_server ;;
+          f) docker_up ;;
+          g) docker_down ;;
+          h) docker_status ;;
+          i) docker_logs ;;
           *) echo "Invalid advanced option." ;;
         esac
         ;;
@@ -571,11 +704,17 @@ main() {
     build) build_ant ;;
     mysql) mysql_init ;;
     run) prepare_and_run ;;
+    run-docker) prepare_and_run_with_docker ;;
     start) prepare_and_start ;;
+    start-docker) prepare_and_start_with_docker ;;
     stop) stop_server ;;
     restart) restart_server ;;
     status) status_server ;;
     logs) show_logs ;;
+    docker-up) docker_up ;;
+    docker-down) docker_down ;;
+    docker-status) docker_status ;;
+    docker-logs) docker_logs ;;
     -h|--help|help) usage ;;
     *) usage; exit 1 ;;
   esac
