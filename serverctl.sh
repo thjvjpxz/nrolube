@@ -243,7 +243,6 @@ load_mysql_from_config() {
 
 prompt_mysql_settings() {
   local input
-  load_mysql_from_config
 
   read -rp "MySQL host [${MYSQL_HOST}]: " input
   [[ -n "$input" ]] && MYSQL_HOST="$input"
@@ -332,6 +331,7 @@ ensure_mysql_seeded() {
 mysql_init() {
   local test_ok=0 fallback_user fallback_pass input
   ensure_mysql_ready
+  load_mysql_from_config
   prompt_mysql_settings
 
   if [[ "$MYSQL_USER" == *"'"* || "$MYSQL_PASS" == *"'"* || "$MYSQL_DB" == *"'"* ]]; then
@@ -401,6 +401,7 @@ mysql_init_docker() {
   saved_host="$MYSQL_HOST"
   saved_port="$MYSQL_PORT"
 
+  load_mysql_from_config
   MYSQL_HOST="127.0.0.1"
   MYSQL_PORT="3307"
   install_if_missing "mysql-client" "mysql"
@@ -418,6 +419,11 @@ mysql_init_docker() {
   echo "[MySQL] Testing connection to Docker DB..."
   if ! MYSQL_PWD="$MYSQL_PASS" mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -e "SELECT 1;" >/dev/null 2>&1; then
     echo "[MySQL] Connection test failed for user '${MYSQL_USER}'."
+    if [[ "$MYSQL_USER" == "root" ]]; then
+      echo "[MySQL] Tip: MYSQL_ROOT_PASSWORD applies only on first init of mysql_data volume."
+      echo "[MySQL] If password mismatch, use existing root password or recreate volume:"
+      echo "        ./serverctl.sh docker-down && docker volume rm nrolube_mysql_data"
+    fi
     echo "Check docker logs: ./serverctl.sh docker-logs"
     MYSQL_HOST="$saved_host"
     MYSQL_PORT="$saved_port"
