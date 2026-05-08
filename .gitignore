@@ -2,7 +2,6 @@
 /build/
 /dist/
 /nbproject/private/
-/nbproject/build-impl.xml
 
 # Java artifacts
 *.class
