@@ -65,10 +65,16 @@ public class Command {
             } else if (text.equals("next nv")) {
                 // Tăng id nhiệm vụ lên 1: [1,0,0,xxx] => [2,0,0,xxx]
                 int currentTaskId = player.playerTask.taskMain.id;
+                int nextTaskId = currentTaskId + 1;
+                boolean nextTaskExists = Manager.TASKS.stream().anyMatch(task -> task.id == nextTaskId);
+                if (!nextTaskExists) {
+                    Service.gI().sendThongBao(player, "Nhiệm vụ tiếp theo không tồn tại: " + nextTaskId);
+                    return true;
+                }
                 player.playerTask.taskMain.id = currentTaskId; // giữ nguyên id hiện tại
                 player.playerTask.taskMain.index = 0; // reset index
                 TaskService.gI().sendNextTaskMain(player); // sẽ tự động tăng id lên 1 và gửi task mới
-                Service.gI().sendThongBao(player, "Đã chuyển sang nhiệm vụ tiếp theo: " + (currentTaskId + 1));
+                Service.gI().sendThongBao(player, "Đã chuyển sang nhiệm vụ tiếp theo: " + nextTaskId);
                 return true;
             } else if (text.equals("mapboss")) {
                 BossManager.gI().showListBoss(player);
@@ -247,6 +253,11 @@ public class Command {
             if (text.startsWith("ntask")) {
                 try {
                     int idTask = Integer.parseInt(text.replaceAll("ntask", ""));
+                    boolean taskExists = Manager.TASKS.stream().anyMatch(task -> task.id == idTask);
+                    if (!taskExists) {
+                        Service.gI().sendThongBao(player, "Nhiệm vụ không tồn tại: " + idTask);
+                        return true;
+                    }
                     player.playerTask.taskMain.id = idTask - 1;
                     player.playerTask.taskMain.index = 0;
                     TaskService.gI().sendNextTaskMain(player);

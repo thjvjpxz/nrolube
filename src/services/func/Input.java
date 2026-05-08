@@ -189,13 +189,22 @@ public class Input {
                 }
                 case BUFFVND: {
                     try {
-                        int idacc = Integer.parseInt(text[0].trim());
-                        int addcash = Integer.parseInt(text[1].trim());
-                        if (PlayerDAO.addcash(idacc, addcash)) {
-                            Service.gI().sendThongBao(player, "Bạn đã buff cho " + idacc + " " + addcash + " VNĐ");
-                            if (Client.gI().getPlayerByUser(idacc) != null) {
-                                Client.gI().getPlayerByUser(idacc).getSession().cash += addcash;
-                                Service.gI().sendThongBao(Client.gI().getPlayerByUser(idacc), "Bạn vừa được cộng " + addcash + "COIN bởi " + player.name);
+                        int accountId = resolveAccountId(text[0]);
+                        if (accountId < 0) {
+                            Service.gI().sendThongBao(player, "Không tìm thấy tài khoản từ thông tin đã nhập");
+                            break;
+                        }
+                        int cashToAdd = Integer.parseInt(text[1].trim());
+                        if (cashToAdd <= 0) {
+                            Service.gI().sendThongBao(player, "Số VNĐ cần buff phải lớn hơn 0");
+                            break;
+                        }
+                        if (PlayerDAO.addcash(accountId, cashToAdd)) {
+                            Service.gI().sendThongBao(player, "Bạn đã buff cho " + accountId + " " + cashToAdd + " VNĐ");
+                            Player targetPlayer = Client.gI().getPlayerByUser(accountId);
+                            if (targetPlayer != null) {
+                                targetPlayer.getSession().cash += cashToAdd;
+                                Service.gI().sendThongBao(targetPlayer, "Bạn vừa được cộng " + cashToAdd + " COIN bởi " + player.name);
                             }
                         }
                     } catch (Exception e) {
@@ -662,8 +671,19 @@ public class Input {
 
     public void createFormBuffVND(Player player) {
         createForm(player, BUFFVND, "Buff VNĐ",
-                new SubInput("id acc người chơi", NUMERIC),
-                new SubInput("VNĐ CẦN BUFF", ANY));
+                new SubInput("id acc hoặc tên người chơi", ANY),
+                new SubInput("VNĐ CẦN BUFF", NUMERIC));
+    }
+
+    private int resolveAccountId(String accountInput) {
+        String normalizedInput = accountInput == null ? "" : accountInput.trim();
+        if (normalizedInput.isEmpty()) {
+            return -1;
+        }
+        if (Util.isInteger(normalizedInput)) {
+            return Integer.parseInt(normalizedInput);
+        }
+        return NDVSqlFetcher.getAccountIdByPlayerName(normalizedInput);
     }
 
     public static class SubInput {

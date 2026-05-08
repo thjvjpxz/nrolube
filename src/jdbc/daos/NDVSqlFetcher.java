@@ -796,12 +796,45 @@ public class NDVSqlFetcher {
 
             // data nhiệm vụ
             dataArray = (JSONArray) JSONValue.parse(rs.getString("data_task"));
-            TaskMain taskMain = TaskService.gI().getTaskMainById(player,
-                    Byte.parseByte(String.valueOf(dataArray.get(0))));
-            taskMain.index = Byte.parseByte(String.valueOf(dataArray.get(1)));
-            taskMain.subTasks.get(taskMain.index).count = Short.parseShort(String.valueOf(dataArray.get(2)));
-            if (dataArray.size() > 3) {
-                taskMain.lastTime = Long.parseLong(String.valueOf(dataArray.get(3)));
+            int taskId = player.gender + 4;
+            int taskIndex = 0;
+            int taskCount = 0;
+            if (dataArray != null && !dataArray.isEmpty()) {
+                try {
+                    taskId = Integer.parseInt(String.valueOf(dataArray.get(0)));
+                    if (dataArray.size() > 1) {
+                        taskIndex = Integer.parseInt(String.valueOf(dataArray.get(1)));
+                    }
+                    if (dataArray.size() > 2) {
+                        taskCount = Integer.parseInt(String.valueOf(dataArray.get(2)));
+                    }
+                } catch (Exception e) {
+                    taskId = player.gender + 4;
+                    taskIndex = 0;
+                    taskCount = 0;
+                }
+            }
+            TaskMain taskMain = TaskService.gI().getTaskMainById(player, taskId);
+            if (taskMain == null) {
+                taskMain = TaskService.gI().getTaskMainById(player, player.gender + 4);
+            }
+            if (taskMain == null && !Manager.TASKS.isEmpty()) {
+                taskMain = new TaskMain(Manager.TASKS.get(0));
+            }
+            if (taskMain == null || taskMain.subTasks == null || taskMain.subTasks.isEmpty()) {
+                throw new IllegalStateException("Cannot load task data for player " + player.id);
+            }
+            if (taskIndex < 0 || taskIndex >= taskMain.subTasks.size()) {
+                taskIndex = 0;
+            }
+            taskMain.index = taskIndex;
+            taskMain.subTasks.get(taskMain.index).count = (short) Math.max(0, taskCount);
+            if (dataArray != null && dataArray.size() > 3) {
+                try {
+                    taskMain.lastTime = Long.parseLong(String.valueOf(dataArray.get(3)));
+                } catch (Exception e) {
+                    taskMain.lastTime = System.currentTimeMillis();
+                }
             } else {
                 taskMain.lastTime = System.currentTimeMillis();
             }
@@ -1535,6 +1568,29 @@ public class NDVSqlFetcher {
             }
         }
         return player;
+    }
+
+    public static int getAccountIdByPlayerName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return -1;
+        }
+        Player onlinePlayer = Client.gI().getPlayer(name.trim());
+        if (onlinePlayer != null && onlinePlayer.getSession() != null) {
+            return onlinePlayer.getSession().userId;
+        }
+        NDVResultSet rs = null;
+        try {
+            rs = DBConnecter.executeQuery("select account_id from player where name = ? limit 1", name.trim());
+            if (rs != null && rs.next()) {
+                return rs.getInt("account_id");
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (rs != null) {
+                rs.dispose();
+            }
+        }
+        return -1;
     }
 
     public static Player loadPlayerByID(long id) {

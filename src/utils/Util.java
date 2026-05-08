@@ -618,6 +618,18 @@ public class Util {
         }
     }
 
+    public static boolean isInteger(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+        try {
+            Integer.valueOf(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     public static String roundToTwoDecimals(double num) {
         double roundedNumber = Math.round(num * 100.0) / 100.0;
         DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
