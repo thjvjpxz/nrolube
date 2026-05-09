@@ -28,7 +28,7 @@ public class PlayerSkill {
 
     public Skill getSkillbyId(int id) {
         for (Skill skill : skills) {
-            if (skill.template.id == id) {
+            if (skill != null && skill.template != null && skill.template.id == id) {
                 return skill;
             }
         }
