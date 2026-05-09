@@ -1211,6 +1211,9 @@ public class Controller implements IMessageHandler {
                             if (player.getSession().version >= 231) {
 
                                 for (Skill skill : player.playerSkill.skills) {
+                                    if (skill == null || skill.template == null) {
+                                        continue;
+                                    }
                                     if (skill.currLevel <= 0 || skill.template.type != 4) {
                                         continue;
                                     }
