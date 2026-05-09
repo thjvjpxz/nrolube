@@ -39,6 +39,8 @@ Usage:
   ./serverctl.sh run-docker
   ./serverctl.sh start
   ./serverctl.sh start-docker
+  ./serverctl.sh restart
+  ./serverctl.sh restart-docker
   ./serverctl.sh stop
   ./serverctl.sh status
   ./serverctl.sh logs
@@ -55,7 +57,7 @@ Notes:
   - menu  : minimal interactive menu
 
 Advanced commands:
-  ./serverctl.sh setup | check | build | mysql | restart | docker-up | docker-down | docker-status | docker-logs | clear-logs
+  ./serverctl.sh setup | check | build | mysql | docker-up | docker-down | docker-status | docker-logs | clear-logs
 EOF
 }
 
@@ -90,8 +92,7 @@ setup_ubuntu() {
   ensure_apt
   echo "[Setup] Installing required packages..."
   sudo apt update
-  sudo apt install -y openjdk-17-jdk ant mysql-server mysql-client tmux unzip curl wget
-  sudo systemctl enable --now mysql
+  sudo apt install -y openjdk-17-jdk ant tmux unzip curl wget
   echo "[Setup] Done."
 }
 
@@ -405,7 +406,11 @@ mysql_init_docker() {
   load_mysql_from_config
   MYSQL_HOST="127.0.0.1"
   MYSQL_PORT="3307"
-  install_if_missing "mysql-client" "mysql"
+  if ! has_cmd mysql; then
+    echo "[MySQL] mysql client is required for Docker DB setup."
+    echo "Install manually (Ubuntu): sudo apt install -y mysql-client"
+    exit 1
+  fi
   prompt_mysql_settings
 
   if [[ "$MYSQL_USER" == *"'"* || "$MYSQL_PASS" == *"'"* || "$MYSQL_DB" == *"'"* ]]; then
@@ -632,6 +637,12 @@ restart_server() {
   prepare_and_start
 }
 
+restart_server_with_docker() {
+  stop_server
+  sleep 2
+  prepare_and_start_with_docker
+}
+
 status_server() {
   if is_running; then
     echo "[Status] RUNNING (PID: $(cat "$PID_FILE"))"
@@ -664,10 +675,12 @@ menu() {
     echo "2) Start full pipeline (background)"
     echo "3) Run full pipeline + Docker DB (foreground)"
     echo "4) Start full pipeline + Docker DB (background)"
-    echo "5) Status"
-    echo "6) Logs"
-    echo "7) Stop"
-    echo "9) Advanced options"
+    echo "5) Restart (local MySQL)"
+    echo "6) Restart (Docker MySQL)"
+    echo "7) Status"
+    echo "8) Logs"
+    echo "9) Stop"
+    echo "10) Advanced options"
     echo "0) Exit"
     echo
     read -rp "Choose option: " choice
@@ -676,33 +689,33 @@ menu() {
       2) prepare_and_start ;;
       3) prepare_and_run_with_docker ;;
       4) prepare_and_start_with_docker ;;
-      5) status_server ;;
-      6) show_logs ;;
-      7) stop_server ;;
-      9)
+      5) restart_server ;;
+      6) restart_server_with_docker ;;
+      7) status_server ;;
+      8) show_logs ;;
+      9) stop_server ;;
+      10)
         echo "--- Advanced ---"
         echo "a) setup  (install packages)"
         echo "b) check  (requirements)"
         echo "c) build  (ant clean jar)"
         echo "d) mysql  (setup + sync config)"
-        echo "e) restart"
-        echo "f) docker up"
-        echo "g) docker down"
-        echo "h) docker status"
-        echo "i) docker logs"
-        echo "j) clear server log"
+        echo "e) docker up"
+        echo "f) docker down"
+        echo "g) docker status"
+        echo "h) docker logs"
+        echo "i) clear server log"
         read -rp "Choose advanced option: " adv
         case "$adv" in
           a) setup_ubuntu ;;
           b) check_requirements ;;
           c) build_ant ;;
           d) mysql_init ;;
-          e) restart_server ;;
-          f) docker_up ;;
-          g) docker_down ;;
-          h) docker_status ;;
-          i) docker_logs ;;
-          j) clear_log ;;
+          e) docker_up ;;
+          f) docker_down ;;
+          g) docker_status ;;
+          h) docker_logs ;;
+          i) clear_log ;;
           *) echo "Invalid advanced option." ;;
         esac
         ;;
@@ -728,6 +741,7 @@ main() {
     start-docker) prepare_and_start_with_docker ;;
     stop) stop_server ;;
     restart) restart_server ;;
+    restart-docker) restart_server_with_docker ;;
     status) status_server ;;
     logs) show_logs ;;
     clear-logs) clear_log ;;
