@@ -42,6 +42,7 @@ Usage:
   ./serverctl.sh stop
   ./serverctl.sh status
   ./serverctl.sh logs
+  ./serverctl.sh clear-logs
   ./serverctl.sh docker-up
   ./serverctl.sh docker-down
   ./serverctl.sh docker-status
@@ -54,7 +55,7 @@ Notes:
   - menu  : minimal interactive menu
 
 Advanced commands:
-  ./serverctl.sh setup | check | build | mysql | restart | docker-up | docker-down | docker-status | docker-logs
+  ./serverctl.sh setup | check | build | mysql | restart | docker-up | docker-down | docker-status | docker-logs | clear-logs
 EOF
 }
 
@@ -646,6 +647,16 @@ show_logs() {
   tail -f "$LOG_FILE"
 }
 
+clear_log() {
+  ensure_dirs
+  if [[ ! -f "$LOG_FILE" ]]; then
+    echo "[Logs] No log file at $LOG_FILE."
+    return
+  fi
+  : >"$LOG_FILE"
+  echo "[Logs] Cleared $LOG_FILE."
+}
+
 menu() {
   while true; do
     print_header
@@ -679,6 +690,7 @@ menu() {
         echo "g) docker down"
         echo "h) docker status"
         echo "i) docker logs"
+        echo "j) clear server log"
         read -rp "Choose advanced option: " adv
         case "$adv" in
           a) setup_ubuntu ;;
@@ -690,6 +702,7 @@ menu() {
           g) docker_down ;;
           h) docker_status ;;
           i) docker_logs ;;
+          j) clear_log ;;
           *) echo "Invalid advanced option." ;;
         esac
         ;;
@@ -717,6 +730,7 @@ main() {
     restart) restart_server ;;
     status) status_server ;;
     logs) show_logs ;;
+    clear-logs) clear_log ;;
     docker-up) docker_up ;;
     docker-down) docker_down ;;
     docker-status) docker_status ;;

@@ -28,7 +28,6 @@ import lombok.Setter;
 import mob.Mob;
 import power.PowerLimit;
 import power.PowerLimitManager;
-import services.func.ChangeMapService;
 import utils.TimeUtil;
 
 public class NPoint {
