@@ -821,6 +821,9 @@ public class ChangeMapService {
     }
 
     public void exitMap(Player player) {
+        if (player == null) {
+            return;
+        }
         if (player.zone != null) {
             // xử thua pvp
             if (player.pvp != null) {
