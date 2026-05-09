@@ -31,6 +31,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>local.libs</groupId>
             <artifactId>lib-sale</artifactId>
             <version>1.0.0</version>
