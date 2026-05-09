@@ -7,7 +7,6 @@ import boss.Boss;
 import boss.BossID;
 import boss.BossManager;
 import consts.ConstMob;
-import consts.ConstNpc;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -21,6 +20,7 @@ import npc.NpcFactory;
 import player.Player;
 import server.Manager;
 import services.Service;
+import utils.Logger;
 import utils.Util;
 
 import java.util.ArrayList;
@@ -47,7 +47,6 @@ import models.MajinBuu.MajinBuu14H;
 import models.MajinBuu.MajinBuu14HService;
 import models.SuperDivineWater.SuperDivineWaterService;
 import services.MapService;
-import utils.Logger;
 
 public class Map implements Runnable {
 
@@ -462,18 +461,20 @@ public class Map implements Runnable {
     public final void readTileMap(int mapId) {
         try {
             try (DataInputStream dis = new DataInputStream(new FileInputStream("data/map/tile_map_data/" + mapId))) {
-                dis.readByte();
-                tmw = dis.readByte();
-                tmh = dis.readByte();
+                tmw = dis.readUnsignedByte();
+                tmh = dis.readUnsignedByte();
                 pxw = tmw * SIZE;
                 pxh = tmh * SIZE;
-                maps = new int[tmw * tmh];
-                for (int j = 0; j < maps.length; j++) {
-                    maps[j] = dis.readByte();
+                int cells = tmw * tmh;
+                maps = new int[cells];
+                for (int j = 0; j < cells; j++) {
+                    maps[j] = dis.readUnsignedByte() - 1;
                 }
                 types = new int[maps.length];
             }
         } catch (IOException e) {
+            System.out.println("[MAP_TILE] mapId=" + mapId + " " + e.getClass().getSimpleName()
+                    + " tile_map_data/" + mapId + " — " + e.getMessage());
         }
     }
 }

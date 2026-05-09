@@ -248,7 +248,7 @@ public class ServerManager {
                                         }
                                         if (data != null) {
                                             int size = data.length;
-                                            if (msg.command == -32 || msg.command == -66 || msg.command == -74
+                                            if (msg.command == -32 || msg.command == -33 || msg.command == -66 || msg.command == -74
                                                     || msg.command == 11 || msg.command == -67 || msg.command == -87
                                                     || msg.command == 66) {
                                                 byte b2 = this.writeKey(session, (byte) size);
