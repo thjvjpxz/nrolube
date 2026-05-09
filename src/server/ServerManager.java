@@ -34,6 +34,7 @@ import consts.ConstDataEventSM;
 
 import java.io.IOException;
 import java.awt.GraphicsEnvironment;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import network.inetwork.ISession;
 import network.Network;
@@ -73,6 +74,11 @@ public class ServerManager {
 
     public static boolean isRunning;
 
+    /**
+     * Ensures {@link #close()} / signal shutdown only run the full save sequence once.
+     */
+    private static final AtomicBoolean GRACEFUL_SHUTDOWN_DONE = new AtomicBoolean(false);
+
     public void init() {
         Manager.gI();
         HistoryTransactionDAO.deleteHistory();
@@ -91,6 +97,14 @@ public class ServerManager {
         boolean isLinux = System.getProperty("os.name", "").toLowerCase().contains("linux");
         boolean isHeadless = GraphicsEnvironment.isHeadless();
         if (isLinux || isHeadless) {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    Logger.warning(">> Shutdown signal received; saving game data...\n");
+                    ServerManager.gI().shutdownGracefully(false);
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            }, "Shutdown-save"));
             ServerManager.gI().run();
             return;
         }
@@ -369,6 +383,19 @@ public class ServerManager {
     }
 
     public void close() {
+        shutdownGracefully(true);
+    }
+
+    /**
+     * Saves persistent game state and tears down connections. Used by maintenance flow and JVM shutdown (SIGTERM).
+     *
+     * @param exitProcess if {@code true}, runs legacy restart.bat hook and {@link System#exit(int)} (maintenance path).
+     *                    If {@code false}, only saves and returns (shutdown-hook path; JVM exit follows naturally).
+     */
+    private void shutdownGracefully(boolean exitProcess) {
+        if (!GRACEFUL_SHUTDOWN_DONE.compareAndSet(false, true)) {
+            return;
+        }
         isRunning = false;
         try {
             ClanService.gI().close();
@@ -392,6 +419,10 @@ public class ServerManager {
         }
 
         Logger.success("SUCCESSFULLY MAINTENANCE!\n");
+
+        if (!exitProcess) {
+            return;
+        }
 
         // if (AutoMaintenance.isRunning) {
         // AutoMaintenance.isRunning = false;

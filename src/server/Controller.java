@@ -772,6 +772,12 @@ public class Controller implements IMessageHandler {
                     break;
                 case 126: // androidPack2
                     break;
+                case -120: // client heartbeat: controller check (mobile)
+                    sendHeartbeatEcho(_session, (byte) -120);
+                    break;
+                case -121: // client heartbeat: map check (mobile)
+                    sendHeartbeatEcho(_session, (byte) -121);
+                    break;
                 case -78: // checkMMove
                     _msg.reader().readInt(); // second
                     break;
@@ -1105,6 +1111,23 @@ public class Controller implements IMessageHandler {
             long timeDo = System.currentTimeMillis() - st;
             if (timeDo > 1000) {
                 Logger.warning(_msg.command + " - TimeOut: " + timeDo + " ms\n");
+            }
+        }
+    }
+
+    private void sendHeartbeatEcho(MySession session, byte command) {
+        if (session == null) {
+            return;
+        }
+        Message ping = null;
+        try {
+            ping = new Message(command);
+            session.sendMessage(ping);
+        } catch (Exception e) {
+            Logger.logException(Controller.class, e);
+        } finally {
+            if (ping != null) {
+                ping.cleanup();
             }
         }
     }
