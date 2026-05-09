@@ -79,13 +79,12 @@ public class MapService {
         int[][] tileMap = null;
         try {
             DataInputStream dis = new DataInputStream(new FileInputStream("data/map/tile_map_data/" + mapId));
-            dis.readByte();
-            int w = dis.readByte();
-            int h = dis.readByte();
+            int w = dis.readUnsignedByte();
+            int h = dis.readUnsignedByte();
             tileMap = new int[h][w];
             for (int i = 0; i < tileMap.length; i++) {
                 for (int j = 0; j < tileMap[i].length; j++) {
-                    tileMap[i][j] = dis.readByte();
+                    tileMap[i][j] = dis.readUnsignedByte() - 1;
                 }
             }
             dis.close();
