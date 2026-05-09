@@ -180,7 +180,7 @@ public class SkillUtil {
 
     public static Skill getSkillbyId(Player player, int id) {
         for (Skill skill : player.playerSkill.skills) {
-            if (skill != null && skill.template != null && skill.template.id == id) {
+            if (skill.template.id == id) {
                 return skill;
             }
         }
