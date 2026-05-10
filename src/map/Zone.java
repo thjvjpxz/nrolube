@@ -497,8 +497,6 @@ public class Zone {
             }
             int playerId = Math.abs(
                     itemMap.playerId > 100_000_000 ? 1_000_000_000 - (int) itemMap.playerId : (int) itemMap.playerId);
-            Logger.warning(" pickItem " + "playerId: " + playerId + "player.id: " + player.id
-                    + " itemMap.playerId: " + itemMap.playerId + "\n");
             int cloneId;
             if (null == (Player) player.clone) {
                 cloneId = -9999;
