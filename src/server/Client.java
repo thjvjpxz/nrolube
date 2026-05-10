@@ -85,8 +85,10 @@ public class Client implements Runnable {
 
     private void remove(MySession session) {
         if (session.player != null) {
-            this.remove(session.player);
-            session.player.dispose();
+            Player p = session.player;
+            this.remove(p);
+            p.dispose();
+            session.player = null;
         }
         if (session.joinedGame) {
             session.joinedGame = false;
