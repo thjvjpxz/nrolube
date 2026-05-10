@@ -68,7 +68,7 @@
 /*     */       } 
 /*  69 */       if (data != null) {
 /*  70 */         int size = data.length;
-/*  71 */         if (msg.command == -32 || msg.command == -66 || msg.command == -74 || msg.command == 11 || msg.command == -67 || msg.command == -87 || msg.command == 66) {
+/*  71 */         if (msg.command == -32 || msg.command == -33 || msg.command == -66 || msg.command == -74 || msg.command == 11 || msg.command == -67 || msg.command == -87 || msg.command == 66) {
 /*  72 */           byte b = writeKey(session, (byte)size);
 /*  73 */           dos.writeByte(b - 128);
 /*  74 */           byte b2 = writeKey(session, (byte)(size >> 8));

@@ -1401,12 +1401,12 @@ public final class Manager {
         int[][] tileMap = null;
         try {
             try (DataInputStream dis = new DataInputStream(new FileInputStream("data/map/tile_map_data/" + mapId))) {
-                int w = dis.readByte();
-                int h = dis.readByte();
+                int w = dis.readUnsignedByte();
+                int h = dis.readUnsignedByte();
                 tileMap = new int[h][w];
                 for (int[] tm : tileMap) {
                     for (int j = 0; j < tm.length; j++) {
-                        tm[j] = dis.readByte();
+                        tm[j] = dis.readUnsignedByte() - 1;
                     }
                 }
             }

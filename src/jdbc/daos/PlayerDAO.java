@@ -394,10 +394,23 @@ public class PlayerDAO {
     }
 
     public static void updatePlayer(Player player) {
-        if (player != null && player.iDMark.isLoadedAllDataPlayer()) {
-            long st = System.currentTimeMillis();
-            try {
-                JSONArray dataArray = new JSONArray();
+        if (player == null) {
+            return;
+        }
+        long st = System.currentTimeMillis();
+        try {
+            // Guard đặt trong try: NPE do race dispose-trước-save không được leak ngược lên
+            // logout/maintenance flow vì sẽ làm cắt save của các player khác trong cùng pass.
+            if (player.iDMark == null) {
+                Logger.warning("Skip save: iDMark null (player=" + player.name
+                        + ") — nghi race dispose-trước-save\n");
+                return;
+            }
+            if (!player.iDMark.isLoadedAllDataPlayer()) {
+                // Đang trong login flow, chưa load xong dữ liệu — return im lặng để không spam log.
+                return;
+            }
+            JSONArray dataArray = new JSONArray();
 
                 // data kim lượng
                 dataArray.add(player.inventory.gold > Inventory.LIMIT_GOLD
@@ -1220,9 +1233,8 @@ public class PlayerDAO {
                     // Player " + player.name + " saved successfully! " +
                     // (System.currentTimeMillis() - st) + "ms\n");
                 }
-            } catch (Exception e) {
-                Logger.logException(PlayerDAO.class, e, "Lỗi save player " + player.name);
-            }
+        } catch (Exception e) {
+            Logger.logException(PlayerDAO.class, e, "Lỗi save player " + player.name);
         }
     }
 

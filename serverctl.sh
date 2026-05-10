@@ -8,6 +8,7 @@ APP_NAME="nro-server"
 JAR_PATH="dist/Michelin_Boy.jar"
 MAIN_CLASS="server.ServerManager"
 PID_FILE=".nro-server.pid"
+JAVA_MEM_FILE=".nro-server.jvm"
 LOG_DIR="logs"
 LOG_FILE="$LOG_DIR/server.log"
 CONFIG_FILE="data/config/config.properties"
@@ -39,6 +40,8 @@ Usage:
   ./serverctl.sh run-docker
   ./serverctl.sh start
   ./serverctl.sh start-docker
+  ./serverctl.sh restart
+  ./serverctl.sh restart-docker
   ./serverctl.sh stop
   ./serverctl.sh status
   ./serverctl.sh logs
@@ -52,10 +55,11 @@ Usage:
 Notes:
   - run   : full pipeline + run foreground (recommended first run)
   - start : full pipeline + run background
+  - restart / restart-docker : reuse data/config/config.properties and .nro-server.jvm (no MySQL/RAM prompts)
   - menu  : minimal interactive menu
 
 Advanced commands:
-  ./serverctl.sh setup | check | build | mysql | restart | docker-up | docker-down | docker-status | docker-logs | clear-logs
+  ./serverctl.sh setup | check | build | mysql | docker-up | docker-down | docker-status | docker-logs | clear-logs
 EOF
 }
 
@@ -90,8 +94,7 @@ setup_ubuntu() {
   ensure_apt
   echo "[Setup] Installing required packages..."
   sudo apt update
-  sudo apt install -y openjdk-17-jdk ant mysql-server mysql-client tmux unzip curl wget
-  sudo systemctl enable --now mysql
+  sudo apt install -y openjdk-17-jdk ant tmux unzip curl wget
   echo "[Setup] Done."
 }
 
@@ -405,7 +408,11 @@ mysql_init_docker() {
   load_mysql_from_config
   MYSQL_HOST="127.0.0.1"
   MYSQL_PORT="3307"
-  install_if_missing "mysql-client" "mysql"
+  if ! has_cmd mysql; then
+    echo "[MySQL] mysql client is required for Docker DB setup."
+    echo "Install manually (Ubuntu): sudo apt install -y mysql-client"
+    exit 1
+  fi
   prompt_mysql_settings
 
   if [[ "$MYSQL_USER" == *"'"* || "$MYSQL_PASS" == *"'"* || "$MYSQL_DB" == *"'"* ]]; then
@@ -424,6 +431,63 @@ mysql_init_docker() {
       echo "[MySQL] Tip: MYSQL_ROOT_PASSWORD applies only on first init of mysql_data volume."
       echo "[MySQL] If password mismatch, use existing root password or recreate volume:"
       echo "        ./serverctl.sh docker-down && docker volume rm nrolube_mysql_data"
+    fi
+    echo "Check docker logs: ./serverctl.sh docker-logs"
+    MYSQL_HOST="$saved_host"
+    MYSQL_PORT="$saved_port"
+    exit 1
+  fi
+
+  ensure_mysql_seeded
+  echo "[MySQL] Docker DB ready."
+}
+
+mysql_init_use_saved_config() {
+  ensure_mysql_ready
+  load_mysql_from_config
+
+  if [[ "$MYSQL_USER" == *"'"* || "$MYSQL_PASS" == *"'"* || "$MYSQL_DB" == *"'"* ]]; then
+    echo "[MySQL] user/pass/db cannot contain single quote (')."
+    exit 1
+  fi
+
+  echo "[MySQL] Using saved settings from $CONFIG_FILE (no prompts)."
+  echo "[MySQL] Testing connection..."
+  if ! MYSQL_PWD="$MYSQL_PASS" mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -e "SELECT 1;" >/dev/null 2>&1; then
+    echo "[MySQL] Connection failed. Fix $CONFIG_FILE or run: ./serverctl.sh mysql"
+    exit 1
+  fi
+
+  ensure_mysql_seeded
+  echo "[MySQL] Ready."
+}
+
+mysql_init_docker_use_saved_config() {
+  local saved_host saved_port
+  saved_host="$MYSQL_HOST"
+  saved_port="$MYSQL_PORT"
+
+  load_mysql_from_config
+  MYSQL_HOST="127.0.0.1"
+  MYSQL_PORT="3307"
+
+  if ! has_cmd mysql; then
+    echo "[MySQL] mysql client is required for Docker DB setup."
+    echo "Install manually (Ubuntu): sudo apt install -y mysql-client"
+    exit 1
+  fi
+
+  if [[ "$MYSQL_USER" == *"'"* || "$MYSQL_PASS" == *"'"* || "$MYSQL_DB" == *"'"* ]]; then
+    echo "[MySQL] user/pass/db cannot contain single quote (')."
+    exit 1
+  fi
+
+  echo "[MySQL] Using Docker DB + saved credentials from $CONFIG_FILE (no prompts)."
+  echo "[MySQL] Testing connection to Docker DB..."
+  if ! MYSQL_PWD="$MYSQL_PASS" mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -e "SELECT 1;" >/dev/null 2>&1; then
+    echo "[MySQL] Connection test failed for user '${MYSQL_USER}'."
+    if [[ "$MYSQL_USER" == "root" ]]; then
+      echo "[MySQL] Tip: MYSQL_ROOT_PASSWORD applies only on first init of mysql_data volume."
     fi
     echo "Check docker logs: ./serverctl.sh docker-logs"
     MYSQL_HOST="$saved_host"
@@ -482,6 +546,32 @@ choose_java_memory() {
     JAVA_XMS="${xms_mib}m"
     echo "[Java] Auto total=${total_mib}MiB => Xmx=${JAVA_XMX}, Xms=${JAVA_XMS}"
   fi
+  write_java_memory_file
+}
+
+write_java_memory_file() {
+  umask 077
+  printf 'JAVA_XMS=%s\nJAVA_XMX=%s\n' "$JAVA_XMS" "$JAVA_XMX" >"$JAVA_MEM_FILE"
+  echo "[Java] Saved heap settings to $JAVA_MEM_FILE"
+}
+
+load_java_memory_saved() {
+  if [[ ! -f "$JAVA_MEM_FILE" ]]; then
+    echo "[Java] No saved heap ($JAVA_MEM_FILE); using defaults Xms=$JAVA_XMS Xmx=$JAVA_XMX"
+    return
+  fi
+  local line k v
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "${line// /}" ]] && continue
+    k="${line%%=*}"
+    v="${line#*=}"
+    case "$k" in
+      JAVA_XMS) JAVA_XMS="$v" ;;
+      JAVA_XMX) JAVA_XMX="$v" ;;
+    esac
+  done <"$JAVA_MEM_FILE"
+  echo "[Java] Loaded saved heap from $JAVA_MEM_FILE: Xms=$JAVA_XMS Xmx=$JAVA_XMX"
 }
 
 is_running() {
@@ -597,6 +687,23 @@ prepare_and_start_with_docker() {
   start_java_background
 }
 
+prepare_and_start_reuse() {
+  ensure_java_and_ant
+  build_ant
+  mysql_init_use_saved_config
+  load_java_memory_saved
+  start_java_background
+}
+
+prepare_and_start_with_docker_reuse() {
+  ensure_java_and_ant
+  build_ant
+  docker_up
+  mysql_init_docker_use_saved_config
+  load_java_memory_saved
+  start_java_background
+}
+
 stop_server() {
   if ! is_running; then
     echo "[Stop] $APP_NAME is not running."
@@ -629,7 +736,13 @@ stop_server() {
 restart_server() {
   stop_server
   sleep 2
-  prepare_and_start
+  prepare_and_start_reuse
+}
+
+restart_server_with_docker() {
+  stop_server
+  sleep 2
+  prepare_and_start_with_docker_reuse
 }
 
 status_server() {
@@ -664,10 +777,12 @@ menu() {
     echo "2) Start full pipeline (background)"
     echo "3) Run full pipeline + Docker DB (foreground)"
     echo "4) Start full pipeline + Docker DB (background)"
-    echo "5) Status"
-    echo "6) Logs"
-    echo "7) Stop"
-    echo "9) Advanced options"
+    echo "5) Restart (local MySQL)"
+    echo "6) Restart (Docker MySQL)"
+    echo "7) Status"
+    echo "8) Logs"
+    echo "9) Stop"
+    echo "10) Advanced options"
     echo "0) Exit"
     echo
     read -rp "Choose option: " choice
@@ -676,33 +791,33 @@ menu() {
       2) prepare_and_start ;;
       3) prepare_and_run_with_docker ;;
       4) prepare_and_start_with_docker ;;
-      5) status_server ;;
-      6) show_logs ;;
-      7) stop_server ;;
-      9)
+      5) restart_server ;;
+      6) restart_server_with_docker ;;
+      7) status_server ;;
+      8) show_logs ;;
+      9) stop_server ;;
+      10)
         echo "--- Advanced ---"
         echo "a) setup  (install packages)"
         echo "b) check  (requirements)"
         echo "c) build  (ant clean jar)"
         echo "d) mysql  (setup + sync config)"
-        echo "e) restart"
-        echo "f) docker up"
-        echo "g) docker down"
-        echo "h) docker status"
-        echo "i) docker logs"
-        echo "j) clear server log"
+        echo "e) docker up"
+        echo "f) docker down"
+        echo "g) docker status"
+        echo "h) docker logs"
+        echo "i) clear server log"
         read -rp "Choose advanced option: " adv
         case "$adv" in
           a) setup_ubuntu ;;
           b) check_requirements ;;
           c) build_ant ;;
           d) mysql_init ;;
-          e) restart_server ;;
-          f) docker_up ;;
-          g) docker_down ;;
-          h) docker_status ;;
-          i) docker_logs ;;
-          j) clear_log ;;
+          e) docker_up ;;
+          f) docker_down ;;
+          g) docker_status ;;
+          h) docker_logs ;;
+          i) clear_log ;;
           *) echo "Invalid advanced option." ;;
         esac
         ;;
@@ -728,6 +843,7 @@ main() {
     start-docker) prepare_and_start_with_docker ;;
     stop) stop_server ;;
     restart) restart_server ;;
+    restart-docker) restart_server_with_docker ;;
     status) status_server ;;
     logs) show_logs ;;
     clear-logs) clear_log ;;

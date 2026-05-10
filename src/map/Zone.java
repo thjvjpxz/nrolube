@@ -19,7 +19,6 @@ import network.Message;
 import boss.boss_manifest.Training.TrainingBoss;
 import consts.ConstItem;
 import consts.ConstMob;
-import consts.ConstNpc;
 import consts.ConstTranhNgocNamek;
 import consts.cn;
 import services.ItemMapService;
