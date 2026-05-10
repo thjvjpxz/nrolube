@@ -22,6 +22,7 @@ import item.Item;
 import map.ItemMap;
 import map.Zone;
 import player.Location;
+import player.NewPet;
 import player.Pet;
 import player.Player;
 import player.PlayerClone;
@@ -532,19 +533,34 @@ public class Mob {
     }
 
     private void hutItem(Player player, List<ItemMap> items) {
-        if (!player.isPet && !player.isNewPet) {
-            if (player.charms.tdThuHut > System.currentTimeMillis()) {
-                for (ItemMap item : items) {
-                    ItemMapService.gI().pickItem(player, item.itemMapId, true);
-                }
-            }
-        } else {
-            if (((Pet) player).master.charms.tdThuHut > System.currentTimeMillis()) {
-                for (ItemMap item : items) {
-                    ItemMapService.gI().pickItem(((Pet) player).master, item.itemMapId, true);
-                }
+        Player owner = resolveLootOwner(player);
+        if (owner == null || owner.charms == null) {
+            return;
+        }
+        if (owner.charms.tdThuHut > System.currentTimeMillis()) {
+            for (ItemMap item : items) {
+                ItemMapService.gI().pickItem(owner, item.itemMapId, true);
             }
         }
+    }
+
+    private Player resolveLootOwner(Player player) {
+        if (player == null) {
+            return null;
+        }
+        if (player instanceof Pet) {
+            return ((Pet) player).master;
+        }
+        if (player instanceof NewPet) {
+            return ((NewPet) player).master;
+        }
+        if (player instanceof PlayerClone) {
+            return ((PlayerClone) player).master;
+        }
+        if (player instanceof LinhDanhThue) {
+            return ((LinhDanhThue) player).master;
+        }
+        return player;
     }
 
     private List<ItemMap> mobReward(Player player, ItemMap itemTask, Message msg) {

@@ -6,6 +6,7 @@ import network.handler.IMessageSendCollect;
 import network.server.EMTIServer;
 import network.session.ISession;
 import network.session.TypeSession;
+import utils.Logger;
 
 import java.io.DataInputStream;
 import java.net.Socket;
@@ -62,6 +63,10 @@ public class Collector
          try {
             EMTIServer.gI().getAcceptHandler().sessionDisconnect(this.session);
          } catch (Exception exception) {
+            // KHÔNG được nuốt: nếu nuốt ở đây thì save logout đã bị cắt, mất data im lặng.
+            Logger.logException(Collector.class, exception,
+                  "sessionDisconnect ném — save logout có thể bị cắt cho "
+                        + (this.session != null ? this.session.getIP() : "unknown"));
          }
 
          if (this.session != null) {

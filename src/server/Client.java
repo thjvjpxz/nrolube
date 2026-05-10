@@ -9,6 +9,7 @@ import EMTI.Functions;
 import jdbc.DBConnecter;
 import jdbc.daos.PlayerDAO;
 import map.ItemMap;
+import map.Zone;
 import player.LinhDanhThue;
 import player.Player;
 import network.SessionManager;
@@ -88,65 +89,113 @@ public class Client implements Runnable {
     }
 
     private void remove(Player player) {
+        removeFromIndexes(player);
+        // Save BẮT BUỘC chạy kể cả khi cleanup ném — nếu không, logout sẽ mất sạch tiến trình player.
+        try {
+            runLogoutCleanup(player);
+        } catch (Exception e) {
+            Logger.logException(Client.class, e,
+                    "Cleanup logout fail (player=" + player.name + "), vẫn tiếp tục save");
+        } finally {
+            PlayerDAO.updatePlayer(player);
+            player.linhDanhThueList.clear();
+        }
+    }
+
+    private void removeFromIndexes(Player player) {
         this.players_id.remove(player.id);
         this.players_name.remove(player.name);
-        this.players_userId.remove(player.getSession().userId);
+        if (player.getSession() != null) {
+            this.players_userId.remove(player.getSession().userId);
+        } else {
+            // Session đã bị null (race với dispose): quét theo value để tránh giữ reference rác.
+            this.players_userId.values().remove(player);
+        }
         this.players.remove(player);
-        if (!player.beforeDispose) {
-            player.beforeDispose = true;
-            player.mapIdBeforeLogout = player.zone.map.mapId;
-            TranhNgoc.gI().removePlayersBlue(player);
-            TranhNgoc.gI().removePlayersRed(player);
-            if (player.idNRNM != -1) {
+    }
+
+    private void runLogoutCleanup(Player player) {
+        if (player.beforeDispose) {
+            return;
+        }
+        player.beforeDispose = true;
+        player.mapIdBeforeLogout = currentMapIdOrHome(player);
+        TranhNgoc.gI().removePlayersBlue(player);
+        TranhNgoc.gI().removePlayersRed(player);
+        if (player.idNRNM != -1) {
+            if (player.zone != null) {
                 ItemMap itemMap = new ItemMap(player.zone, player.idNRNM, 1, player.location.x, player.location.y, -1);
                 Service.gI().dropItemMap(player.zone, itemMap);
-                NgocRongNamecService.gI().pNrNamec[player.idNRNM - 353] = "";
-                NgocRongNamecService.gI().idpNrNamec[player.idNRNM - 353] = -1;
-                player.idNRNM = -1;
             }
+            // Clear global state phải luôn chạy: reInitNgocRongNamec() chỉ respawn slot có pNrNamec[i]=="",
+            // nếu skip do zone null thì viên ngọc bị orphan tới khi reset server.
+            NgocRongNamecService.gI().pNrNamec[player.idNRNM - 353] = "";
+            NgocRongNamecService.gI().idpNrNamec[player.idNRNM - 353] = -1;
+            player.idNRNM = -1;
+        }
+        // exitMap đụng nhiều field nullable (pvp, effectSkill, effectSkin, iDMark) — cô lập lỗi
+        // ở đây để forceDetachFromZone bên dưới luôn chạy, không để Zone giữ player đã dispose.
+        try {
             ChangeMapService.gI().exitMap(player);
-            TransactionService.gI().cancelTrade(player);
-            if (player.clan != null) {
-                player.clan.removeMemberOnline(null, player);
+        } catch (Exception e) {
+            Logger.logException(Client.class, e,
+                    "exitMap fail (player=" + player.name + "), force detach zone");
+        }
+        forceDetachFromZone(player);
+        TransactionService.gI().cancelTrade(player);
+        if (player.clan != null) {
+            player.clan.removeMemberOnline(null, player);
+        }
+        if (SummonDragon.gI().playerSummonShenron != null
+                && SummonDragon.gI().playerSummonShenron.id == player.id) {
+            SummonDragon.gI().isPlayerDisconnect = true;
+        }
+        if (SummonDragonNamek.gI().playerSummonShenron != null
+                && SummonDragonNamek.gI().playerSummonShenron.id == player.id) {
+            SummonDragonNamek.gI().isPlayerDisconnect = true;
+        }
+        if (player.shenronEvent != null) {
+            player.shenronEvent.isPlayerDisconnect = true;
+        }
+        if (player.mobMe != null) {
+            player.mobMe.mobMeDie();
+        }
+        if (player.pet != null) {
+            if (player.pet.mobMe != null) {
+                player.pet.mobMe.mobMeDie();
             }
-            if (SummonDragon.gI().playerSummonShenron != null
-                    && SummonDragon.gI().playerSummonShenron.id == player.id) {
-                SummonDragon.gI().isPlayerDisconnect = true;
-            }
-            if (SummonDragonNamek.gI().playerSummonShenron != null
-                    && SummonDragonNamek.gI().playerSummonShenron.id == player.id) {
-                SummonDragonNamek.gI().isPlayerDisconnect = true;
-            }
-            if (player.shenronEvent != null) {
-                player.shenronEvent.isPlayerDisconnect = true;
-            }
-            if (player.mobMe != null) {
-                player.mobMe.mobMeDie();
-            }
-            if (player.pet != null) {
-                if (player.pet.mobMe != null) {
-                    player.pet.mobMe.mobMeDie();
+            ChangeMapService.gI().exitMap(player.pet);
+        }
+        // Giữ nguyên list lính đánh thuê cho bước save kế tiếp; một lính lỗi không được làm dừng vòng.
+        for (int i = player.linhDanhThueList.size() - 1; i >= 0; i--) {
+            try {
+                LinhDanhThue ldt = player.linhDanhThueList.get(i);
+                if (ldt != null && ldt.zone != null) {
+                    ChangeMapService.gI().exitMap(ldt);
                 }
-                ChangeMapService.gI().exitMap(player.pet);
-            }
-            // Dispose all mercenaries when player logout (remove from map only, not from
-            // list)
-            // We need to keep the list intact for saving to DB
-            for (int i = player.linhDanhThueList.size() - 1; i >= 0; i--) {
-                try {
-                    LinhDanhThue ldt = player.linhDanhThueList.get(i);
-                    if (ldt != null && ldt.zone != null) {
-                        ChangeMapService.gI().exitMap(ldt);
-                    }
-                } catch (Exception e) {
-                    // Ignore
-                }
+            } catch (Exception ignored) {
             }
         }
-        // Save player data (including mercenary data) to DB
-        PlayerDAO.updatePlayer(player);
-        // Now clear the mercenary list after saving
-        player.linhDanhThueList.clear();
+    }
+
+    private int currentMapIdOrHome(Player player) {
+        if (player.zone != null && player.zone.map != null) {
+            return player.zone.map.mapId;
+        }
+        return player.gender + 21;
+    }
+
+    // Đảm bảo Zone không giữ reference tới player sắp dispose, kể cả khi exitMap nổ giữa chừng.
+    private void forceDetachFromZone(Player player) {
+        Zone zone = player.zone;
+        if (zone == null) {
+            return;
+        }
+        try {
+            zone.removePlayer(player);
+        } catch (Exception ignored) {
+        }
+        player.zone = null;
     }
 
     public void kickSession(MySession session) {
