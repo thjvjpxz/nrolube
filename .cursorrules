@@ -40,7 +40,17 @@
 - Use intention-revealing names (`accountId`, `cashToAdd`, `playerName`).
 - Keep functions short and single-purpose.
 - Avoid duplicated logic; extract small local/private methods first.
-- Comments explain WHY (constraints/trade-offs), not WHAT.
+
+## Commenting Rules
+- Write comments in Vietnamese (team's working language); identifiers (class/method/variable names) stay in English.
+- Only add a comment when the logic is genuinely hard or a trade-off/constraint must be remembered. Self-explanatory code wins by default.
+- Comments must explain **WHY** (rationale, consequence of not doing it this way), not **WHAT** (the code already shows the what).
+- Do not narrate what a method/variable name already conveys — rename for clarity instead of adding a descriptive comment.
+- Do not duplicate: if an outer block already explains the intent, do not repeat it on inner lines or nested catch blocks.
+- Avoid JavaDoc on short/self-naming private methods; reserve JavaDoc for public/protected APIs or methods whose name cannot fully convey intent.
+- Lean on identifier names to carry meaning: `catch (Exception ignored) {}` is enough on its own — no "ignore this" comment needed.
+- Acceptable comments: legal/license headers, intent of complex regex/SQL, explicit trade-off warnings, TODOs with owner and reason.
+- Do not delete existing WHY comments in legacy code just because they look unpolished — only remove if actually wrong or stale.
 
 ## Compatibility and Safety
 - Do not change packet/message IDs, protocol formats, or command text flows unless requested.
