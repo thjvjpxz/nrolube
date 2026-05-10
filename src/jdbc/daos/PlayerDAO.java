@@ -15,6 +15,7 @@ import item.Item;
 import item.ItemTime;
 import player.Friend;
 import player.Fusion;
+import player.IDMark;
 import player.Inventory;
 import player.LinhDanhThue;
 import player.Player;
@@ -45,7 +46,37 @@ import utils.TimeUtil;
 import utils.Util;
 import services.FarmService;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
+import server.Client;
+import server.io.MySession;
+
 public class PlayerDAO {
+
+    /**
+     * Serialize DB write per player id — chặn autosave async ghi đè sau logout save.
+     * Giữ lock trong map lâu dài (không remove tay): remove sai dễ tạo 2 lock cho cùng id.
+     */
+    private static final ConcurrentHashMap<Long, ReentrantLock> PLAYER_SAVE_LOCKS = new ConcurrentHashMap<>();
+
+    private static ReentrantLock saveLock(long playerId) {
+        return PLAYER_SAVE_LOCKS.computeIfAbsent(playerId, id -> new ReentrantLock());
+    }
+
+    /**
+     * Autosave chỉ ghi khi instance vẫn là người đang online; sau logout Client đã gỡ index → skip.
+     */
+    private static boolean canAutoSave(Player player) {
+        if (player == null || player.beforeDispose) {
+            return false;
+        }
+        MySession s = player.getSession();
+        if (s == null || !s.joinedGame) {
+            return false;
+        }
+        return Client.gI().getPlayer(player.id) == player;
+    }
 
     public static boolean createNewPlayer(int userId, String name, byte gender, int hair) {
         try {
@@ -380,8 +411,33 @@ public class PlayerDAO {
      * Trả về ngay lập tức, không block thread hiện tại.
      */
     public static void updatePlayerAsync(Player player) {
-        if (player == null || !player.iDMark.isLoadedAllDataPlayer()) return;
-        DbAsyncTask.gI().submit(() -> updatePlayer(player));
+        if (player == null) {
+            return;
+        }
+        IDMark mark = player.iDMark;
+        if (mark == null || !mark.isLoadedAllDataPlayer()) {
+            return;
+        }
+        final long playerId = player.id;
+        if (playerId <= 0L) {
+            return;
+        }
+        DbAsyncTask.gI().submit(() -> {
+            ReentrantLock lock = saveLock(playerId);
+            lock.lock();
+            try {
+                if (!canAutoSave(player)) {
+                    return;
+                }
+                IDMark markInside = player.iDMark;
+                if (markInside == null || !markInside.isLoadedAllDataPlayer()) {
+                    return;
+                }
+                doUpdatePlayer(player);
+            } finally {
+                lock.unlock();
+            }
+        });
     }
 
     /**
@@ -394,6 +450,23 @@ public class PlayerDAO {
     }
 
     public static void updatePlayer(Player player) {
+        if (player == null) {
+            return;
+        }
+        long pid = player.id;
+        if (pid <= 0L) {
+            return;
+        }
+        ReentrantLock lock = saveLock(pid);
+        lock.lock();
+        try {
+            doUpdatePlayer(player);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private static void doUpdatePlayer(Player player) {
         if (player == null) {
             return;
         }
