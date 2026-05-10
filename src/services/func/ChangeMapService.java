@@ -409,6 +409,9 @@ public class ChangeMapService {
             if (pl.pet != null) {
                 pl.pet.joinMapMaster();
             }
+            if (pl.isPl() && zoneJoin.map.mapId == 47) {
+                TrainingService.gI().clearBoss(pl, BossID.TAUPAYPAY);
+            }
             Service.gI().clearMap(pl);
             // Fix Lỗi Load Map 15/09/2023
             if (!pl.isPl()) {
@@ -437,9 +440,8 @@ public class ChangeMapService {
                     }
                 }
             }
-            if (zoneJoin.map.mapId == 47) {
-                if (TaskService.gI().getIdTask(pl) > ConstTask.TASK_9_0
-                        && TaskService.gI().getIdTask(pl) < ConstTask.TASK_10_2) {
+            if (pl.isPl() && zoneJoin.map.mapId == 47) {
+                if (TaskService.gI().getIdTask(pl) == ConstTask.TASK_10_1) {
                     TrainingService.gI().callBoss(pl, BossID.TAUPAYPAY, false);
                 }
             }
