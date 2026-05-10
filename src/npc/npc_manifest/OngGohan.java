@@ -3,7 +3,6 @@ package npc.npc_manifest;
 import consts.ConstNpc;
 import consts.ConstTask;
 import consts.ConstTaskBadges;
-import consts.cn;
 import item.Item;
 
 import java.util.ArrayList;
@@ -18,9 +17,7 @@ import services.NpcService;
 import services.PetService;
 import services.Service;
 import services.TaskService;
-import services.func.ChangeMapService;
 import services.func.Input;
-import shop.ShopService;
 import task.Badges.BadgesTaskService;
 import utils.Util;
 
@@ -55,10 +52,7 @@ public class OngGohan extends Npc {
                         "Xóa đệ", // 2
                         "Nhận ngọc\nMiễn phí", // 3
                         "Nhận đệ tử", // 4
-                        "Hỗ trợ\nNhiệm vụ", // 5
-                        "Hộp thư", // 6
-                        "Vườn rau", // 7
-                        "Từ chối");
+                        "Hỗ trợ\nNhiệm vụ"); // 5
             }
         }
     }
@@ -111,13 +105,7 @@ public class OngGohan extends Npc {
 
                         break;
                     case 5:
-                        if (TaskService.gI().getIdTask(player) >= ConstTask.TASK_9_0
-                                && TaskService.gI().getIdTask(player) < ConstTask.TASK_11_0) {
-                            player.playerTask.taskMain.id = 10;
-                            player.playerTask.taskMain.index = 0;
-                            TaskService.gI().sendNextTaskMain(player);
-                            Service.gI().sendThongBao(player, "Bạn đã được hỗ trợ nhiệm vụ thành công");
-                        } else if (TaskService.gI().getIdTask(player) >= ConstTask.TASK_18_0
+                        if (TaskService.gI().getIdTask(player) >= ConstTask.TASK_18_0
                                 && TaskService.gI().getIdTask(player) < ConstTask.TASK_20_0) {
                             player.playerTask.taskMain.id = 19;
                             player.playerTask.taskMain.index = 0;
@@ -125,41 +113,8 @@ public class OngGohan extends Npc {
                             Service.gI().sendThongBao(player, "Bạn đã được hỗ trợ nhiệm vụ thành công");
                         } else {
                             Service.gI().sendThongBao(player,
-                                    "Chỉ hỗ trợ nhiệm vụ tàu pảy pảy và nhiệm vụ DHVT, Trung úy trắng");
+                                    "Chỉ hỗ trợ nhiệm vụ DHVT, Trung úy trắng");
                         }
-                        break;
-                    case 6:
-                        this.createOtherMenu(player, ConstNpc.MAIL_BOX,
-                                "|0|Tình yêu như một dây đàn\n"
-                                        + "Tình vừa được thì đàn đứt dây\n"
-                                        + "Đứt dây này anh thay dây khác\n"
-                                        + "Mất em rồi anh biết thay ai?",
-                                "Hòm Thư\n(" + (player.inventory.itemsMailBox.size()
-                                        - InventoryService.gI().getCountEmptyListItem(player.inventory.itemsMailBox))
-                                        + " món)",
-                                "Xóa Hết\nHòm Thư", "Đóng");
-                        break;
-                    case 7: // Vườn rau
-                        // Map 39 = Trái Đất, 40 = Namec, 41 = Xayda
-                        int mapVuonRau = 39 + player.gender;
-                        ChangeMapService.gI().changeMapNonSpaceship(player, mapVuonRau, 200, 336);
-                        break;
-                }
-            } else if (player.iDMark.getIndexMenu() == ConstNpc.MAIL_BOX) {
-                switch (select) {
-                    case 0:
-                        // player.inventory.itemsMailBox.clear();
-                        // player.inventory.itemsMailBox.addAll(GodGK.getMailBox(player));
-                        ShopService.gI().opendShop(player, "ITEMS_MAIL_BOX", true);
-                        break;
-                    case 1:
-                        NpcService.gI().createMenuConMeo(player,
-                                ConstNpc.CONFIRM_REMOVE_ALL_ITEM_MAIL_BOX, this.avartar,
-                                "|3|Bạn chắc muốn xóa hết vật phẩm trong hòm thư?\n"
-                                        + "|7|Sau khi xóa sẽ không thể khôi phục!",
-                                "Đồng ý", "Hủy bỏ");
-                        break;
-                    case 2:
                         break;
                 }
             } else if (player.iDMark.getIndexMenu() == ConstNpc.NAP_TIEN) {
