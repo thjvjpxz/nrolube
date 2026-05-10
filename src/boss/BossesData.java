@@ -2399,6 +2399,31 @@ public class BossesData {
                         new String[] { "|-1|OK ta chịu thua" }, // text chat 3
                         REST_1_S);
 
+        public static final BossData TAUPAYPAY_AFTER_KARIN = new BossData(
+                        "Tàu Pảy Pảy", // name
+                        ConstPlayer.XAYDA, // gender
+                        new short[] { 92, 93, 94, -1, 1, -1 }, // outfit {head, body, leg, bag, aura, eff}
+                        200, // dame
+                        new long[] { 1000 }, // hp
+                        new int[] { 47 }, // map join
+                        new int[][] {
+                                        { Skill.DRAGON, 1, 1000 },
+                                        { Skill.DRAGON, 2, 2000 },
+                                        { Skill.DRAGON, 3, 3000 },
+                                        { Skill.DRAGON, 7, 7000 },
+                                        { Skill.KAMEJOKO, 7, 2000 },
+                                        { Skill.KAMEJOKO, 6, 1800 },
+                                        { Skill.KAMEJOKO, 4, 1500 },
+                                        { Skill.KAMEJOKO, 2, 1000 }
+                        },
+                        new String[] { "|-1|Ta sẽ dạy ngươi vài chiêu",
+                                        "|-1|Ta sẽ đánh hết sức, ngươi cẩn thận nhé" }, // text chat 1
+                        new String[] { "|-1|Haizzzzz",
+                                        "|-1|Hahaha",
+                                        "|-1|Xem đây" }, // text chat 2
+                        new String[] { "|-1|OK ta chịu thua" }, // text chat 3
+                        REST_1_S);
+
         public static final BossData YAJIRO = new BossData(
                         "Yajirô", // name
                         ConstPlayer.XAYDA, // gender

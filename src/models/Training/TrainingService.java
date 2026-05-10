@@ -8,6 +8,7 @@ package models.Training;
 
 import boss.Boss;
 import boss.BossID;
+import boss.OtherBossManager;
 import boss.boss_manifest.Training.*;
 import consts.ConstNpc;
 import map.Zone;
@@ -18,6 +19,8 @@ import services.Service;
 import services.func.ChangeMapService;
 import utils.Logger;
 import utils.Util;
+
+import java.util.ArrayList;
 
 public class TrainingService {
 
@@ -63,6 +66,23 @@ public class TrainingService {
     public void luyenTapEnd(Player pl, int bossID) {
         if (getNpc(bossID) != -1) {
             Service.gI().sendHideNpc(pl, getNpc(bossID), false);
+        }
+    }
+
+    public void clearBoss(Player pl, int bossID) {
+        for (Boss boss : new ArrayList<>(OtherBossManager.gI().getBosses())) {
+            if (boss == null || boss.id != bossID) {
+                continue;
+            }
+            if (boss instanceof TrainingBoss trainingBoss && trainingBoss.playerAtt != null
+                    && trainingBoss.playerAtt.equals(pl)) {
+                if (boss.zone != null) {
+                    ChangeMapService.gI().exitMap(boss);
+                    boss.zone = null;
+                }
+                OtherBossManager.gI().removeBoss(boss);
+                boss.dispose();
+            }
         }
     }
 

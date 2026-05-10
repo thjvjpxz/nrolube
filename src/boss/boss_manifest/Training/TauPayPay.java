@@ -4,6 +4,7 @@ package boss.boss_manifest.Training;
  * @author EMTI
  */
 
+import boss.BossData;
 import boss.BossID;
 import boss.BossStatus;
 import boss.BossesData;
@@ -26,8 +27,14 @@ import static boss.BossType.PHOBAN;
 public class TauPayPay extends TrainingBoss {
 
     public TauPayPay(Player player) throws Exception {
-        super(PHOBAN, BossID.TAUPAYPAY, BossesData.TAUPAYPAY);
+        super(PHOBAN, BossID.TAUPAYPAY, getBossData(player));
         this.playerAtt = player;
+    }
+
+    private static BossData getBossData(Player player) {
+        return player != null && TaskService.gI().getIdTask(player) == ConstTask.TASK_10_1
+                ? BossesData.TAUPAYPAY_AFTER_KARIN
+                : BossesData.TAUPAYPAY;
     }
 
     @Override
