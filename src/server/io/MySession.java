@@ -125,53 +125,66 @@ public class MySession extends Session {
             return;
         }
         if (this.player == null) {
-            Player pl = null;
+            NDVSqlFetcher.AccountLoginOutcome loginOutcome = null;
             try {
                 long st = System.currentTimeMillis();
                 this.uu = username;
                 this.pp = password;
-                pl = NDVSqlFetcher.login(this, al);
-                if (pl != null) {
-                    // -77 max small
-                    DataGame.sendSmallVersion(this);
-                    // -93 bgitem version
-                    DataGame.sendBgItemVersion(this);
-
-                    this.timeWait = 0;
-                    this.joinedGame = true;
-                    pl.nPoint.calPoint();
-                    pl.nPoint.setHp(Util.maxIntValue(pl.nPoint.hp));
-                    pl.nPoint.setMp(Util.maxIntValue(pl.nPoint.mp));
-                    pl.zone.addPlayer(pl);
-                    if (pl.pet != null) {
-                        pl.pet.nPoint.calPoint();
-                        pl.pet.nPoint.setHp(Util.maxIntValue(pl.nPoint.hp));
-                        pl.pet.nPoint.setMp(Util.maxIntValue(pl.nPoint.mp));
-                    }
-
-                    pl.setSession(this);
-                    Client.gI().put(pl);
-                    this.player = pl;
-                    // -28 -4 version data game
-                    DataGame.sendVersionGame(this);
-                    // -31 data item background
-                    DataGame.sendDataItemBG(this);
-                    Controller.gI().sendInfo(this);
-                    Logger.warning(
-                            TimeUtil.getCurrHour() + "h" + TimeUtil.getCurrMin() + "m: Thành công đăng nhập người chơi "
-                                    + this.player.name + ": " + (System.currentTimeMillis() - st) + " ms\n");
-                    if (this.player.notify != null && !this.player.notify.equals("null")
-                            && !this.player.notify.isEmpty() && this.player.notify.length() > 0) {
-                        Service.gI().sendThongBao(this.player, this.player.notify);
-                        this.player.notify = null;
-                    }
+                loginOutcome = NDVSqlFetcher.login(this, al);
+                if (loginOutcome.player != null) {
+                    bindLoadedPlayerThenBroadcastLogin(loginOutcome.player, st);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                if (pl != null) {
-                    pl.dispose();
+                if (loginOutcome != null && loginOutcome.player != null) {
+                    Player pl = loginOutcome.player;
+                    // Đã bind session/player hoặc đã put → kickSession (cleanup zone + Client); không thì dispose tay.
+                    if (this.player == pl || Client.gI().getPlayer(pl.id) == pl) {
+                        Client.gI().kickSession(this);
+                    } else {
+                        pl.dispose();
+                    }
+                }
+            } finally {
+                // heldAccountGate != null: lock vẫn giữ sau NDVSqlFetcher.login — mở sau put/bind, cùng thread.
+                if (loginOutcome != null && loginOutcome.heldAccountGate != null) {
+                    loginOutcome.heldAccountGate.unlock();
                 }
             }
+        }
+    }
+
+    // Đưa player đã load vào Client + gửi gói vào game; phải gọi trong cùng stack với NDVSqlFetcher.login khi có heldAccountGate.
+    private void bindLoadedPlayerThenBroadcastLogin(Player pl, long startMs) {
+        DataGame.sendSmallVersion(this);
+        DataGame.sendBgItemVersion(this);
+
+        pl.setSession(this);
+        this.player = pl;
+
+        this.timeWait = 0;
+        this.joinedGame = true;
+        pl.nPoint.calPoint();
+        pl.nPoint.setHp(Util.maxIntValue(pl.nPoint.hp));
+        pl.nPoint.setMp(Util.maxIntValue(pl.nPoint.mp));
+        pl.zone.addPlayer(pl);
+        if (pl.pet != null) {
+            pl.pet.nPoint.calPoint();
+            pl.pet.nPoint.setHp(Util.maxIntValue(pl.nPoint.hp));
+            pl.pet.nPoint.setMp(Util.maxIntValue(pl.nPoint.mp));
+        }
+
+        Client.gI().put(pl);
+        DataGame.sendVersionGame(this);
+        DataGame.sendDataItemBG(this);
+        Controller.gI().sendInfo(this);
+        Logger.warning(
+                TimeUtil.getCurrHour() + "h" + TimeUtil.getCurrMin() + "m: Thành công đăng nhập người chơi "
+                        + this.player.name + ": " + (System.currentTimeMillis() - startMs) + " ms\n");
+        if (this.player.notify != null && !this.player.notify.equals("null")
+                && !this.player.notify.isEmpty() && this.player.notify.length() > 0) {
+            Service.gI().sendThongBao(this.player, this.player.notify);
+            this.player.notify = null;
         }
     }
 

@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import models.DragonNamecWar.TranhNgoc;
 import services.func.SummonDragonNamek;
 import utils.Util;
@@ -39,6 +41,16 @@ public class Client implements Runnable {
     private final Map<Integer, Player> players_userId = new HashMap<>();
     private final Map<String, Player> players_name = new HashMap<>();
     private final List<Player> players = new ArrayList<>();
+
+    /**
+     * Serialize disconnect/save vs login/load per account.
+     * Map phình theo số userId từng xuất hiện (không remove entry); private server thường chấp nhận được.
+     */
+    private static final ConcurrentHashMap<Integer, ReentrantLock> ACCOUNT_LOGIN_LOCKS = new ConcurrentHashMap<>();
+
+    public static ReentrantLock accountLock(int userId) {
+        return ACCOUNT_LOGIN_LOCKS.computeIfAbsent(userId, id -> new ReentrantLock());
+    }
 
     private Client() {
         new Thread(this, "Update Client").start();
@@ -89,29 +101,41 @@ public class Client implements Runnable {
     }
 
     private void remove(Player player) {
-        removeFromIndexes(player);
-        // Save BẮT BUỘC chạy kể cả khi cleanup ném — nếu không, logout sẽ mất sạch tiến trình player.
+        // Snapshot trước mọi thao tác có thể làm mất name/session (dispose offline / dispose session).
+        long indexPlayerId = player.id;
+        String indexName = player.name;
+        int indexUserId = player.getSession() != null ? player.getSession().userId : -1;
+        // Gỡ khỏi index online trước cleanup/save: tránh hệ thống khác coi player còn "online"
+        // trong lúc exitMap/trade/clan... Chống đọc DB cũ khi reconnect không dựa vào việc giữ index
+        // mà nhờ accountLock trong kickSession (userId>0) serialize với NDVSqlFetcher.login.
+        removeFromIndexes(indexPlayerId, indexName, indexUserId, player);
         try {
             runLogoutCleanup(player);
         } catch (Exception e) {
             Logger.logException(Client.class, e,
                     "Cleanup logout fail (player=" + player.name + "), vẫn tiếp tục save");
         } finally {
-            PlayerDAO.updatePlayer(player);
-            player.linhDanhThueList.clear();
+            try {
+                PlayerDAO.updatePlayer(player);
+            } finally {
+                player.linhDanhThueList.clear();
+            }
         }
     }
 
-    private void removeFromIndexes(Player player) {
-        this.players_id.remove(player.id);
-        this.players_name.remove(player.name);
-        if (player.getSession() != null) {
-            this.players_userId.remove(player.getSession().userId);
+    private void removeFromIndexes(long playerId, String characterName, int accountUserId, Player playerRef) {
+        this.players_id.remove(playerId);
+        if (characterName != null) {
+            this.players_name.remove(characterName);
         } else {
-            // Session đã bị null (race với dispose): quét theo value để tránh giữ reference rác.
-            this.players_userId.values().remove(player);
+            this.players_name.values().remove(playerRef);
         }
-        this.players.remove(player);
+        if (accountUserId > 0) {
+            this.players_userId.remove(accountUserId);
+        } else {
+            this.players_userId.values().remove(playerRef);
+        }
+        this.players.remove(playerRef);
     }
 
     private void runLogoutCleanup(Player player) {
@@ -199,9 +223,36 @@ public class Client implements Runnable {
     }
 
     public void kickSession(MySession session) {
-        if (session != null) {
+        if (session == null) {
+            return;
+        }
+        int uid = session.userId;
+        if (uid <= 0) {
             session.disconnect();
             this.remove(session);
+            return;
+        }
+        ReentrantLock lock = accountLock(uid);
+        lock.lock();
+        try {
+            session.disconnect();
+            this.remove(session);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Đá người đang trong index online: có session → kickSession; ghost (session null, ví dụ sau bug cũ) → remove(player).
+     */
+    public void kickOnlinePlayer(Player player) {
+        if (player == null) {
+            return;
+        }
+        if (player.getSession() != null) {
+            kickSession((MySession) player.getSession());
+        } else {
+            remove(player);
         }
     }
 
