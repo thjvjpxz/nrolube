@@ -16,7 +16,6 @@ import item.Item;
 import item.ItemTime;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import npc.specialnpc.MabuEgg;
 import npc.specialnpc.MagicTree;
@@ -134,39 +133,55 @@ public class NDVSqlFetcher {
                     accountGate.lock();
                     boolean releaseLockInFetcher = true;
                     try {
-                        if (rs.getTimestamp("last_time_login").getTime() > session.lastTimeLogout
-                                && (plInGame = Client.gI().getPlayerByUser(session.userId)) != null) {
-                            Client.gI().kickOnlinePlayer(plInGame);
-                            Client.gI().kickSession(session);
-                            Service.gI().sendLoginFail(session, true);
-                        } else {
-                            if (secondsPass < Manager.SECOND_WAIT_LOGIN) {
-                                Service.gI().sendWaitToLogin(session, Manager.SECOND_WAIT_LOGIN - secondsPass);
-                            } else {
-                                rs = DBConnecter.executeQuery("select * from player where account_id = ? limit 1",
-                                        session.userId);
-                                if (!rs.next()) {
-                                    // -28 -4 version data game
-                                    DataGame.sendVersionGame(session);
-                                    // -31 data item background
-                                    DataGame.sendDataItemBG(session);
-                                    Service.gI().switchToCreateChar(session);
+                        NDVResultSet accountRs = DBConnecter.executeQuery(
+                                "select server_login from account where id = ?", session.userId);
+                        try {
+                            int serverLogin = accountRs.next() ? accountRs.getInt("server_login") : -1;
+                            if (serverLogin != -1) {
+                                plInGame = Client.gI().getPlayerByUser(session.userId);
+                                if (plInGame != null) {
+                                    Client.gI().kickOnlinePlayer(plInGame);
+                                    Client.gI().kickSession(session);
+                                    Service.gI().sendThongBaoOK(session, "Mất kết nối, vui lòng đăng nhập lại");
+                                } else if (serverLogin == Manager.SERVER) {
+                                    AccountDAO.resetServerLogin(session.userId);
+                                    Service.gI().sendThongBaoOK(session, "Mất kết nối, vui lòng đăng nhập lại");
                                 } else {
-                                    plInGame = Client.gI().getPlayerByUser(session.userId);
-                                    if (plInGame != null) {
-                                        Client.gI().kickOnlinePlayer(plInGame);
-                                    }
-                                    if ((player = loadPlayer(rs, false)) != null) {
-                                        player.isPlayer = true;
-                                        player.deltaTime = deltaTime;
-                                        player.isNewMember = !Util.isTimeDifferenceGreaterThanNDays(createTime, 45);
-                                        DBConnecter.executeUpdate("update account set last_time_login = '"
-                                                + new Timestamp(System.currentTimeMillis()) + "', ip_address = '"
-                                                + session.ipAddress + "' where id = " + session.userId);
-                                        gateHeldForCaller = accountGate;
-                                        releaseLockInFetcher = false;
+                                    Service.gI().sendThongBaoOK(session, "Tài khoản đang đăng nhập ở server khác");
+                                }
+                                Service.gI().sendLoginFail(session, true);
+                            } else {
+                                if (secondsPass < Manager.SECOND_WAIT_LOGIN) {
+                                    Service.gI().sendWaitToLogin(session, Manager.SECOND_WAIT_LOGIN - secondsPass);
+                                } else {
+                                    rs = DBConnecter.executeQuery("select * from player where account_id = ? limit 1",
+                                            session.userId);
+                                    if (!rs.next()) {
+                                        // -28 -4 version data game
+                                        DataGame.sendVersionGame(session);
+                                        // -31 data item background
+                                        DataGame.sendDataItemBG(session);
+                                        Service.gI().switchToCreateChar(session);
+                                    } else {
+                                        plInGame = Client.gI().getPlayerByUser(session.userId);
+                                        if (plInGame != null) {
+                                            Client.gI().kickOnlinePlayer(plInGame);
+                                        }
+                                        if ((player = loadPlayer(rs, false)) != null) {
+                                            player.isPlayer = true;
+                                            player.deltaTime = deltaTime;
+                                            player.isNewMember = !Util.isTimeDifferenceGreaterThanNDays(createTime, 45);
+                                            AccountDAO.markLogin(session.userId, Manager.SERVER,
+                                                    session.ipAddress, new Timestamp(System.currentTimeMillis()));
+                                            gateHeldForCaller = accountGate;
+                                            releaseLockInFetcher = false;
+                                        }
                                     }
                                 }
+                            }
+                        } finally {
+                            if (accountRs != null) {
+                                accountRs.dispose();
                             }
                         }
                     } finally {

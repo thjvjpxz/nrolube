@@ -6,7 +6,7 @@ package server;
  * @author EMTI
  */
 import EMTI.Functions;
-import jdbc.DBConnecter;
+import jdbc.daos.AccountDAO;
 import jdbc.daos.PlayerDAO;
 import map.ItemMap;
 import map.Zone;
@@ -98,15 +98,14 @@ public class Client implements Runnable {
             session.joinedGame = false;
             Timestamp logoutAt = new Timestamp(System.currentTimeMillis());
             try {
-                int rows = DBConnecter.executeUpdate("update account set last_time_logout = ? where id = ?",
-                        logoutAt, session.userId);
-                Logger.warning(LOGOUT_TRACE + "last_time_logout updated rows=" + rows
+                int rows = AccountDAO.markLogout(session.userId, logoutAt);
+                Logger.warning(LOGOUT_TRACE + "server_login=-1 last_time_logout updated rows=" + rows
                         + " userId=" + session.userId
                         + " at=" + logoutAt
                         + " session=" + describeSession(session) + "\n");
             } catch (Exception e) {
                 Logger.logException(Client.class, e,
-                        LOGOUT_TRACE + "last_time_logout update failed userId=" + session.userId
+                        LOGOUT_TRACE + "server_login/last_time_logout update failed userId=" + session.userId
                                 + " session=" + describeSession(session));
             }
         } else {
