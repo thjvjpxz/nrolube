@@ -50,6 +50,7 @@ import java.util.*;
 import models.The23rdMartialArtCongress.The23rdMartialArtCongressManager;
 import models.DeathOrAliveArena.DeathOrAliveArenaManager;
 import event.EventManager;
+
 import java.io.DataOutputStream;
 import jdbc.daos.EventDAO;
 import models.WorldMartialArtsTournament.WorldMartialArtsTournamentManager;
@@ -70,7 +71,6 @@ public class ServerManager {
         IS_LINUX_OR_HEADLESS = isLinux || isHeadless;
     }
 
-    private static final String DISCONNECT_TRACE = "[DISCONNECT_TRACE] ";
 
     public static String timeStart;
 
@@ -295,9 +295,6 @@ public class ServerManager {
 
                 @Override
                 public void sessionDisconnect(ISession session) {
-                    long startedAt = System.currentTimeMillis();
-                    Logger.warning(DISCONNECT_TRACE + "sessionDisconnect begin: "
-                            + describeSession(session) + "\n");
                     try {
                         String ip = session.getIP();
                         if (CLIENTS.containsKey(ip)) {
@@ -309,13 +306,8 @@ public class ServerManager {
                             }
                         }
                         Client.gI().kickSession((MySession) session);
-                        Logger.warning(DISCONNECT_TRACE + "sessionDisconnect end tookMs="
-                                + (System.currentTimeMillis() - startedAt)
-                                + " session=" + describeSession(session) + "\n");
                     } catch (Exception e) {
-                        Logger.logException(ServerManager.class, e,
-                                DISCONNECT_TRACE + "sessionDisconnect failed session="
-                                        + describeSession(session));
+                        Logger.logException(ServerManager.class, e, "Error during session disconnect");
                     }
                 }
             }).setTypeSessioClone(MySession.class)

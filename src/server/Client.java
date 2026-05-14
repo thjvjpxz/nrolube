@@ -36,8 +36,6 @@ import utils.Util;
 public class Client implements Runnable {
 
     private static Client instance;
-    private static final String DISCONNECT_TRACE = "[DISCONNECT_TRACE] ";
-    private static final String LOGOUT_TRACE = "[LOGOUT_TRACE] ";
 
     private final Map<Long, Player> players_id = new HashMap<>();
     private final Map<Integer, Player> players_userId = new HashMap<>();
@@ -86,8 +84,6 @@ public class Client implements Runnable {
     }
 
     private void remove(MySession session) {
-        Logger.warning(LOGOUT_TRACE + "remove session begin: " + describeSession(session) + "\n");
-        long startedAt = System.currentTimeMillis();
         if (session.player != null) {
             Player p = session.player;
             this.remove(p);
@@ -98,35 +94,19 @@ public class Client implements Runnable {
             session.joinedGame = false;
             Timestamp logoutAt = new Timestamp(System.currentTimeMillis());
             try {
-                int rows = AccountDAO.markLogout(session.userId, logoutAt);
-                Logger.warning(LOGOUT_TRACE + "server_login=-1 last_time_logout updated rows=" + rows
-                        + " userId=" + session.userId
-                        + " at=" + logoutAt
-                        + " session=" + describeSession(session) + "\n");
+                AccountDAO.markLogout(session.userId, logoutAt);
             } catch (Exception e) {
                 Logger.logException(Client.class, e,
-                        LOGOUT_TRACE + "server_login/last_time_logout update failed userId=" + session.userId
-                                + " session=" + describeSession(session));
+                        "Update last_time_logout fail for userId=" + session.userId);
             }
-        } else {
-            Logger.warning(LOGOUT_TRACE + "skip last_time_logout because joinedGame=false: "
-                    + describeSession(session) + "\n");
         }
         ServerManager.gI().disconnect(session);
-        Logger.warning(LOGOUT_TRACE + "remove session end tookMs=" + (System.currentTimeMillis() - startedAt)
-                + " session=" + describeSession(session) + "\n");
     }
 
     private void remove(Player player) {
-        // Snapshot trước mọi thao tác có thể làm mất name/session (dispose offline / dispose session).
         long indexPlayerId = player.id;
         String indexName = player.name;
         int indexUserId = player.getSession() != null ? player.getSession().userId : -1;
-        Logger.warning(LOGOUT_TRACE + "remove player begin: "
-                + describePlayer(player, indexUserId) + "\n");
-        // Gỡ khỏi index online trước cleanup/save: tránh hệ thống khác coi player còn "online"
-        // trong lúc exitMap/trade/clan... Chống đọc DB cũ khi reconnect không dựa vào việc giữ index
-        // mà nhờ accountLock trong kickSession (userId>0) serialize với NDVSqlFetcher.login.
         removeFromIndexes(indexPlayerId, indexName, indexUserId, player);
         try {
             runLogoutCleanup(player);
@@ -134,12 +114,8 @@ public class Client implements Runnable {
             Logger.logException(Client.class, e,
                     "Cleanup logout fail (player=" + player.name + "), vẫn tiếp tục save");
         } finally {
-            long saveStartedAt = System.currentTimeMillis();
             try {
-                boolean saved = PlayerDAO.updatePlayerForLogout(player);
-                Logger.warning(LOGOUT_TRACE + "logout save returned saved=" + saved
-                        + " tookMs=" + (System.currentTimeMillis() - saveStartedAt)
-                        + " " + describePlayer(player, indexUserId) + "\n");
+                PlayerDAO.updatePlayerForLogout(player);
             } finally {
                 player.linhDanhThueList.clear();
             }
@@ -249,69 +225,20 @@ public class Client implements Runnable {
         if (session == null) {
             return;
         }
-        Logger.warning(DISCONNECT_TRACE + "kickSession begin: " + describeSession(session) + "\n");
         int uid = session.userId;
         if (uid <= 0) {
             session.disconnect();
             this.remove(session);
-            Logger.warning(DISCONNECT_TRACE + "kickSession end without account lock: "
-                    + describeSession(session) + "\n");
             return;
         }
         ReentrantLock lock = accountLock(uid);
         lock.lock();
         try {
-            Logger.warning(DISCONNECT_TRACE + "account lock acquired userId=" + uid
-                    + " session=" + describeSession(session) + "\n");
             session.disconnect();
             this.remove(session);
         } finally {
             lock.unlock();
-            Logger.warning(DISCONNECT_TRACE + "kickSession end userId=" + uid
-                    + " session=" + describeSession(session) + "\n");
         }
-    }
-
-    private static String describeSession(MySession session) {
-        if (session == null) {
-            return "session=null";
-        }
-        Player player = session.player;
-        return "session@" + Integer.toHexString(System.identityHashCode(session))
-                + " ip=" + session.getIP()
-                + " userId=" + session.userId
-                + " joined=" + session.joinedGame
-                + " player=" + (player != null ? player.name + "#" + player.id : "null");
-    }
-
-    private static String describePlayer(Player player, int accountUserId) {
-        if (player == null) {
-            return "player=null userId=" + accountUserId;
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append("player=").append(player.name).append("#").append(player.id)
-                .append(" userId=").append(accountUserId)
-                .append(" mapBeforeLogout=").append(player.mapIdBeforeLogout);
-        if (player.location != null) {
-            sb.append(" loc=").append(player.location.x).append(",").append(player.location.y);
-        }
-        if (player.nPoint != null) {
-            sb.append(" power=").append(player.nPoint.power)
-                    .append(" tiemNang=").append(player.nPoint.tiemNang)
-                    .append(" hp=").append(player.nPoint.hp)
-                    .append(" mp=").append(player.nPoint.mp);
-        }
-        if (player.inventory != null) {
-            sb.append(" gold=").append(player.inventory.gold)
-                    .append(" gem=").append(player.inventory.gem)
-                    .append(" ruby=").append(player.inventory.ruby);
-        }
-        if (player.iDMark != null) {
-            sb.append(" loaded=").append(player.iDMark.isLoadedAllDataPlayer());
-        } else {
-            sb.append(" loadedMark=null");
-        }
-        return sb.toString();
     }
 
     /**
