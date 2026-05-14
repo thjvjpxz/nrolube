@@ -46,6 +46,7 @@ Usage:
   ./serverctl.sh status
   ./serverctl.sh logs
   ./serverctl.sh clear-logs
+  ./serverctl.sh start-java
   ./serverctl.sh docker-up
   ./serverctl.sh docker-down
   ./serverctl.sh docker-status
@@ -56,10 +57,11 @@ Notes:
   - run   : full pipeline + run foreground (recommended first run)
   - start : full pipeline + run background
   - restart / restart-docker : reuse data/config/config.properties and .nro-server.jvm (no MySQL/RAM prompts)
+  - start-java : chỉ start Java server, không build Ant, không MySQL init, không Docker
   - menu  : minimal interactive menu
 
 Advanced commands:
-  ./serverctl.sh setup | check | build | mysql | docker-up | docker-down | docker-status | docker-logs | clear-logs
+  ./serverctl.sh setup | check | build | mysql | start-java | docker-up | docker-down | docker-status | docker-logs | clear-logs
 EOF
 }
 
@@ -551,13 +553,14 @@ choose_java_memory() {
 
 write_java_memory_file() {
   umask 077
-  printf 'JAVA_XMS=%s\nJAVA_XMX=%s\n' "$JAVA_XMS" "$JAVA_XMX" >"$JAVA_MEM_FILE"
-  echo "[Java] Saved heap settings to $JAVA_MEM_FILE"
+  printf 'JAVA_XMS=%s\nJAVA_XMX=%s\nJAVA_XSS=%s\nJAVA_GC_OPTS=%s\n' \
+    "$JAVA_XMS" "$JAVA_XMX" "$JAVA_XSS" "$JAVA_GC_OPTS" >"$JAVA_MEM_FILE"
+  echo "[Java] Saved JVM settings to $JAVA_MEM_FILE"
 }
 
 load_java_memory_saved() {
   if [[ ! -f "$JAVA_MEM_FILE" ]]; then
-    echo "[Java] No saved heap ($JAVA_MEM_FILE); using defaults Xms=$JAVA_XMS Xmx=$JAVA_XMX"
+    echo "[Java] No saved JVM settings ($JAVA_MEM_FILE); using defaults Xms=$JAVA_XMS Xmx=$JAVA_XMX Xss=$JAVA_XSS GC=$JAVA_GC_OPTS"
     return
   fi
   local line k v
@@ -569,9 +572,11 @@ load_java_memory_saved() {
     case "$k" in
       JAVA_XMS) JAVA_XMS="$v" ;;
       JAVA_XMX) JAVA_XMX="$v" ;;
+      JAVA_XSS) JAVA_XSS="$v" ;;
+      JAVA_GC_OPTS) JAVA_GC_OPTS="$v" ;;
     esac
   done <"$JAVA_MEM_FILE"
-  echo "[Java] Loaded saved heap from $JAVA_MEM_FILE: Xms=$JAVA_XMS Xmx=$JAVA_XMX"
+  echo "[Java] Loaded saved JVM from $JAVA_MEM_FILE: Xms=$JAVA_XMS Xmx=$JAVA_XMX Xss=$JAVA_XSS GC=$JAVA_GC_OPTS"
 }
 
 is_running() {
@@ -588,6 +593,12 @@ is_running() {
 run_java_foreground() {
   echo "[Run] Starting foreground..."
   java -Xms"$JAVA_XMS" -Xmx"$JAVA_XMX" -Xss"$JAVA_XSS" $JAVA_GC_OPTS -cp "$JAR_PATH:lib/*" "$MAIN_CLASS"
+}
+
+start_java_only() {
+  ensure_dirs
+  load_java_memory_saved
+  start_java_background
 }
 
 start_java_background() {
@@ -845,6 +856,7 @@ main() {
     restart) restart_server ;;
     restart-docker) restart_server_with_docker ;;
     status) status_server ;;
+    start-java) start_java_only ;;
     logs) show_logs ;;
     clear-logs) clear_log ;;
     docker-up) docker_up ;;
