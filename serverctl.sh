@@ -553,13 +553,14 @@ choose_java_memory() {
 
 write_java_memory_file() {
   umask 077
-  printf 'JAVA_XMS=%s\nJAVA_XMX=%s\n' "$JAVA_XMS" "$JAVA_XMX" >"$JAVA_MEM_FILE"
-  echo "[Java] Saved heap settings to $JAVA_MEM_FILE"
+  printf 'JAVA_XMS=%s\nJAVA_XMX=%s\nJAVA_XSS=%s\nJAVA_GC_OPTS=%s\n' \
+    "$JAVA_XMS" "$JAVA_XMX" "$JAVA_XSS" "$JAVA_GC_OPTS" >"$JAVA_MEM_FILE"
+  echo "[Java] Saved JVM settings to $JAVA_MEM_FILE"
 }
 
 load_java_memory_saved() {
   if [[ ! -f "$JAVA_MEM_FILE" ]]; then
-    echo "[Java] No saved heap ($JAVA_MEM_FILE); using defaults Xms=$JAVA_XMS Xmx=$JAVA_XMX"
+    echo "[Java] No saved JVM settings ($JAVA_MEM_FILE); using defaults Xms=$JAVA_XMS Xmx=$JAVA_XMX Xss=$JAVA_XSS GC=$JAVA_GC_OPTS"
     return
   fi
   local line k v
@@ -571,9 +572,11 @@ load_java_memory_saved() {
     case "$k" in
       JAVA_XMS) JAVA_XMS="$v" ;;
       JAVA_XMX) JAVA_XMX="$v" ;;
+      JAVA_XSS) JAVA_XSS="$v" ;;
+      JAVA_GC_OPTS) JAVA_GC_OPTS="$v" ;;
     esac
   done <"$JAVA_MEM_FILE"
-  echo "[Java] Loaded saved heap from $JAVA_MEM_FILE: Xms=$JAVA_XMS Xmx=$JAVA_XMX"
+  echo "[Java] Loaded saved JVM from $JAVA_MEM_FILE: Xms=$JAVA_XMS Xmx=$JAVA_XMX Xss=$JAVA_XSS GC=$JAVA_GC_OPTS"
 }
 
 is_running() {
