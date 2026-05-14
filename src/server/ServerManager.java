@@ -62,6 +62,14 @@ import services.func.TopService;
 
 public class ServerManager {
 
+    private static final boolean IS_LINUX_OR_HEADLESS;
+
+    static {
+        boolean isLinux = System.getProperty("os.name", "").toLowerCase().contains("linux");
+        boolean isHeadless = GraphicsEnvironment.isHeadless();
+        IS_LINUX_OR_HEADLESS = isLinux || isHeadless;
+    }
+
     private static final String DISCONNECT_TRACE = "[DISCONNECT_TRACE] ";
 
     public static String timeStart;
@@ -96,9 +104,7 @@ public class ServerManager {
 
     public static void main(String[] args) {
         timeStart = TimeUtil.getTimeNow("dd/MM/yyyy HH:mm:ss");
-        boolean isLinux = System.getProperty("os.name", "").toLowerCase().contains("linux");
-        boolean isHeadless = GraphicsEnvironment.isHeadless();
-        if (isLinux || isHeadless) {
+        if (IS_LINUX_OR_HEADLESS) {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
                     Logger.warning(">> Shutdown signal received; saving game data...\n");
@@ -456,14 +462,20 @@ public class ServerManager {
             return;
         }
 
-        // if (AutoMaintenance.isRunning) {
-        // AutoMaintenance.isRunning = false;
-        try {
-            String batchFilePath = "restart.bat";
-            FileRunner.runBatchFile(batchFilePath);
-        } catch (IOException e) {
+        if (IS_LINUX_OR_HEADLESS) {
+            try {
+                Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c",
+                    "sleep 5; ./serverctl.sh start-java >> logs/autorestart.log 2>&1 &"});
+            } catch (IOException e) {
+                Logger.error("Không thể spawn auto restart: " + e.getMessage() + "\n");
+            }
+        } else {
+            try {
+                String batchFilePath = "restart.bat";
+                FileRunner.runBatchFile(batchFilePath);
+            } catch (IOException e) {
+            }
         }
-        // }
         System.exit(0);
     }
 }
