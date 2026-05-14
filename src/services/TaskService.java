@@ -14,7 +14,7 @@ import consts.ConstTask;
 import boss.Boss;
 import boss.BossID;
 import clan.ClanMember;
-import consts.ConstAchievement;
+import consts.ConstItem;
 import consts.ConstTaskBadges;
 import item.Item;
 
@@ -24,8 +24,6 @@ import map.ItemMap;
 import map.Zone;
 import mob.Mob;
 import npc.Npc;
-import shop.ItemShop;
-import shop.Shop;
 import task.SideTaskTemplate;
 import task.SubTaskMain;
 import task.TaskMain;
@@ -37,8 +35,6 @@ import utils.Util;
 import java.util.ArrayList;
 import java.util.List;
 
-import jdbc.daos.PlayerDAO;
-import models.Achievement.AchievementService;
 import server.Client;
 import task.Badges.BadgesTaskService;
 import task.ClanTaskTemplate;
@@ -679,6 +675,21 @@ public class TaskService {
     public boolean doneTask(Player player, int idTaskCustom) {
         // PlayerDAO.updateLastTimeUpdateTask(player, System.currentTimeMillis());
         if (TaskService.gI().isCurrentTask(player, idTaskCustom)) {
+            // Nộp truyện tranh (tempId 85): không có trong hành trang thì không hoàn thành được
+            if (idTaskCustom == ConstTask.TASK_11_0 || idTaskCustom == ConstTask.TASK_14_2) {
+                Item truyen = InventoryService.gI().findItemBag(player, ConstItem.TRUYEN_TRANH);
+                if (truyen == null || !truyen.isNotNullItem() || truyen.quantity < 1) {
+                    Service.gI().sendThongBao(player,
+                            "Bạn cần có truyện tranh trong hành trang để hoàn thành nhiệm vụ.");
+                    return false;
+                }
+                InventoryService.gI().subQuantityItemsBag(player, truyen, 1);
+                InventoryService.gI().sendItemBag(player);
+            }
+            if (idTaskCustom == ConstTask.TASK_10_3 && !canReceiveTutorialItem(player, ConstItem.TRUYEN_TRANH)) {
+                Service.gI().sendThongBao(player, "Hành trang không đủ chỗ trống.");
+                return false;
+            }
             this.addDoneSubTask(player, 1);
             switch (idTaskCustom) {
                 // --------------------------------------------------------------
@@ -1004,6 +1015,10 @@ public class TaskService {
                                             : (player.gender == ConstPlayer.NAMEC ? "Trưởng lão Guru" : "Vua Vegeta"))
                                     + ", ngài rất thích đọc truyện Đôrêmon, con hãy đem tới cho ngài\n"
                                     + "Nhất định ngài sẽ thu nhận con làm đệ tử, con ráng học thành tài nhé");
+                    Item truyenTap1 = ItemService.gI().createNewItem((short) ConstItem.TRUYEN_TRANH);
+                    InventoryService.gI().addItemBag(player, truyenTap1);
+                    InventoryService.gI().sendItemBag(player);
+                    Service.gI().sendThongBao(player, "Bạn nhận được truyện Đôrêmon tập 1");
                     break;
                 // -----------------------------------------------------------------------
                 case ConstTask.TASK_11_0:
@@ -2078,5 +2093,19 @@ public class TaskService {
         } else {
             Service.gI().sendThongBao(player, "Tiếp theo hãy về Bang hội báo cáo.");
         }
+    }
+
+    private boolean canReceiveTutorialItem(Player player, int tempId) {
+        Item probe = ItemService.gI().createNewItem((short) tempId);
+        if (!probe.isNotNullItem()) {
+            return true;
+        }
+        if (probe.template.isUpToUp) {
+            Item stack = InventoryService.gI().findItemBag(player, tempId);
+            if (stack != null && stack.isNotNullItem() && stack.quantity < 9999) {
+                return true;
+            }
+        }
+        return InventoryService.gI().getCountEmptyBag(player) > 0;
     }
 }

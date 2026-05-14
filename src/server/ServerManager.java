@@ -62,6 +62,8 @@ import services.func.TopService;
 
 public class ServerManager {
 
+    private static final String DISCONNECT_TRACE = "[DISCONNECT_TRACE] ";
+
     public static String timeStart;
 
     public static final Map CLIENTS = new HashMap();
@@ -287,16 +289,28 @@ public class ServerManager {
 
                 @Override
                 public void sessionDisconnect(ISession session) {
-                    String ip = session.getIP();
-                    if (CLIENTS.containsKey(ip)) {
-                        int n = Integer.parseInt(String.valueOf(CLIENTS.get(ip)));
-                        if (n > 1) {
-                            CLIENTS.put(ip, n - 1);
-                        } else {
-                            CLIENTS.remove(ip);
+                    long startedAt = System.currentTimeMillis();
+                    Logger.warning(DISCONNECT_TRACE + "sessionDisconnect begin: "
+                            + describeSession(session) + "\n");
+                    try {
+                        String ip = session.getIP();
+                        if (CLIENTS.containsKey(ip)) {
+                            int n = Integer.parseInt(String.valueOf(CLIENTS.get(ip)));
+                            if (n > 1) {
+                                CLIENTS.put(ip, n - 1);
+                            } else {
+                                CLIENTS.remove(ip);
+                            }
                         }
+                        Client.gI().kickSession((MySession) session);
+                        Logger.warning(DISCONNECT_TRACE + "sessionDisconnect end tookMs="
+                                + (System.currentTimeMillis() - startedAt)
+                                + " session=" + describeSession(session) + "\n");
+                    } catch (Exception e) {
+                        Logger.logException(ServerManager.class, e,
+                                DISCONNECT_TRACE + "sessionDisconnect failed session="
+                                        + describeSession(session));
                     }
-                    Client.gI().kickSession((MySession) session);
                 }
             }).setTypeSessioClone(MySession.class)
                     .setDoSomeThingWhenClose(() -> {
@@ -380,6 +394,24 @@ public class ServerManager {
             }
             CLIENTS.put(session.getIP(), n);
         }
+    }
+
+    private static String describeSession(ISession session) {
+        if (session == null) {
+            return "session=null";
+        }
+        String base = "session@" + Integer.toHexString(System.identityHashCode(session))
+                + " ip=" + session.getIP();
+        if (!(session instanceof MySession)) {
+            return base + " type=" + session.getClass().getName();
+        }
+        MySession mySession = (MySession) session;
+        return base
+                + " userId=" + mySession.userId
+                + " joined=" + mySession.joinedGame
+                + " player=" + (mySession.player != null
+                        ? mySession.player.name + "#" + mySession.player.id
+                        : "null");
     }
 
     public void close() {

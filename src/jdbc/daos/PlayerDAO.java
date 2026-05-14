@@ -15,6 +15,7 @@ import item.Item;
 import item.ItemTime;
 import player.Friend;
 import player.Fusion;
+import player.IDMark;
 import player.Inventory;
 import player.LinhDanhThue;
 import player.Player;
@@ -45,7 +46,39 @@ import utils.TimeUtil;
 import utils.Util;
 import services.FarmService;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
+import server.Client;
+import server.io.MySession;
+
 public class PlayerDAO {
+    private static final String SAVE_TRACE = "[SAVE_TRACE] ";
+
+
+    /**
+     * Serialize DB write per player id — chặn autosave async ghi đè sau logout save.
+     * Giữ lock trong map lâu dài (không remove tay): remove sai dễ tạo 2 lock cho cùng id.
+     */
+    private static final ConcurrentHashMap<Long, ReentrantLock> PLAYER_SAVE_LOCKS = new ConcurrentHashMap<>();
+
+    private static ReentrantLock saveLock(long playerId) {
+        return PLAYER_SAVE_LOCKS.computeIfAbsent(playerId, id -> new ReentrantLock());
+    }
+
+    /**
+     * Autosave chỉ ghi khi instance vẫn là người đang online; sau logout Client đã gỡ index → skip.
+     */
+    private static boolean canAutoSave(Player player) {
+        if (player == null || player.beforeDispose) {
+            return false;
+        }
+        MySession s = player.getSession();
+        if (s == null || !s.joinedGame) {
+            return false;
+        }
+        return Client.gI().getPlayer(player.id) == player;
+    }
 
     public static boolean createNewPlayer(int userId, String name, byte gender, int hair) {
         try {
@@ -380,8 +413,33 @@ public class PlayerDAO {
      * Trả về ngay lập tức, không block thread hiện tại.
      */
     public static void updatePlayerAsync(Player player) {
-        if (player == null || !player.iDMark.isLoadedAllDataPlayer()) return;
-        DbAsyncTask.gI().submit(() -> updatePlayer(player));
+        if (player == null) {
+            return;
+        }
+        IDMark mark = player.iDMark;
+        if (mark == null || !mark.isLoadedAllDataPlayer()) {
+            return;
+        }
+        final long playerId = player.id;
+        if (playerId <= 0L) {
+            return;
+        }
+        DbAsyncTask.gI().submit(() -> {
+            ReentrantLock lock = saveLock(playerId);
+            lock.lock();
+            try {
+                if (!canAutoSave(player)) {
+                    return;
+                }
+                IDMark markInside = player.iDMark;
+                if (markInside == null || !markInside.isLoadedAllDataPlayer()) {
+                    return;
+                }
+                doUpdatePlayer(player, false);
+            } finally {
+                lock.unlock();
+            }
+        });
     }
 
     /**
@@ -397,6 +455,43 @@ public class PlayerDAO {
         if (player == null) {
             return;
         }
+        long pid = player.id;
+        if (pid <= 0L) {
+            return;
+        }
+        ReentrantLock lock = saveLock(pid);
+        lock.lock();
+        try {
+            doUpdatePlayer(player, false);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public static boolean updatePlayerForLogout(Player player) {
+        if (player == null) {
+            Logger.warning(SAVE_TRACE + "logout save skipped: player=null\n");
+            return false;
+        }
+        long pid = player.id;
+        if (pid <= 0L) {
+            Logger.warning(SAVE_TRACE + "logout save skipped: invalid player id player="
+                    + player.name + " id=" + pid + "\n");
+            return false;
+        }
+        ReentrantLock lock = saveLock(pid);
+        lock.lock();
+        try {
+            return doUpdatePlayer(player, true);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private static boolean doUpdatePlayer(Player player, boolean logResult) {
+        if (player == null) {
+            return false;
+        }
         long st = System.currentTimeMillis();
         try {
             // Guard đặt trong try: NPE do race dispose-trước-save không được leak ngược lên
@@ -404,11 +499,15 @@ public class PlayerDAO {
             if (player.iDMark == null) {
                 Logger.warning("Skip save: iDMark null (player=" + player.name
                         + ") — nghi race dispose-trước-save\n");
-                return;
+                return false;
             }
             if (!player.iDMark.isLoadedAllDataPlayer()) {
                 // Đang trong login flow, chưa load xong dữ liệu — return im lặng để không spam log.
-                return;
+                if (logResult) {
+                    Logger.warning(SAVE_TRACE + "logout save skipped: data not fully loaded player="
+                            + player.name + "#" + player.id + "\n");
+                }
+                return false;
             }
             JSONArray dataArray = new JSONArray();
 
@@ -1146,7 +1245,7 @@ public class PlayerDAO {
                         + "check_in = ?, hpbang =?, mpbang=?, damebang =?, critbang =?,`option` =?,choice = ?,vip=?, data_mercenary = ?, data_cooking = ?"
                         + " where id = ?";
 
-                DBConnecter.executeUpdate(query,
+                int rows = DBConnecter.executeUpdate(query,
                         player.head,
                         player.haveTennisSpaceShip,
                         (player.clan != null ? player.clan.id : -1),
@@ -1223,6 +1322,21 @@ public class PlayerDAO {
 
                         // player.nPoint.power,
                         player.id);
+                if (logResult || rows != 1) {
+                    Logger.warning(SAVE_TRACE + "player update executed rows=" + rows
+                            + " tookMs=" + (System.currentTimeMillis() - st)
+                            + " player=" + player.name + "#" + player.id
+                            + " power=" + (player.nPoint != null ? player.nPoint.power : -1)
+                            + " tiemNang=" + (player.nPoint != null ? player.nPoint.tiemNang : -1)
+                            + " gold=" + (player.inventory != null ? player.inventory.gold : -1)
+                            + " gem=" + (player.inventory != null ? player.inventory.gem : -1)
+                            + " ruby=" + (player.inventory != null ? player.inventory.ruby : -1)
+                            + " pointLen=" + textLength(point)
+                            + " invLen=" + textLength(inventory)
+                            + " bagLen=" + textLength(itemsBag)
+                            + " bodyLen=" + textLength(itemsBody)
+                            + " boxLen=" + textLength(itemsBox) + "\n");
+                }
                 if (player.isOffline) {
                     // Logger.log(Logger.PURPLE, TimeUtil.getCurrHour() + "h" +
                     // TimeUtil.getCurrMin() + "m: Player " + player.name + " updated successfully!
@@ -1233,9 +1347,15 @@ public class PlayerDAO {
                     // Player " + player.name + " saved successfully! " +
                     // (System.currentTimeMillis() - st) + "ms\n");
                 }
+                return rows > 0;
         } catch (Exception e) {
             Logger.logException(PlayerDAO.class, e, "Lỗi save player " + player.name);
+            return false;
         }
+    }
+
+    private static int textLength(String value) {
+        return value != null ? value.length() : -1;
     }
 
     public static boolean checkLogout(Connection con, Player player) {
