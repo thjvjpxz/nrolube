@@ -185,9 +185,10 @@ public class PlayerService {
             }
             if (player.isPl()) {
                 try {
-                    int type = player.zone.map.tileMap[player.location.y / 24][player.location.x / 24];
-                    player.isFly = type == 0;
+                    int yPhysic = player.zone.map.yPhysicInTop(player.location.x, player.location.y);
+                    player.isFly = yPhysic > player.location.y;
                 } catch (Exception e) {
+                    player.isFly = false;
                 }
                 if (player.isFly && player.getMount() == -1) {
                     long mp = player.nPoint.mpg / (100 * (player.effectSkill.isMonkey ? 2 : 1));
