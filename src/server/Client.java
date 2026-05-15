@@ -225,6 +225,9 @@ public class Client implements Runnable {
         if (session == null) {
             return;
         }
+        if (!session.markDisconnectCleanupStarted()) {
+            return;
+        }
         int uid = session.userId;
         if (uid <= 0) {
             session.disconnect();

@@ -7,6 +7,7 @@ package server.io;
  */
 
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import player.Player;
 import server.Controller;
@@ -33,6 +34,8 @@ public class MySession extends Session {
 
     private static final Map<String, AntiLogin> ANTILOGIN = new HashMap<>();
     public Player player;
+
+    private final AtomicBoolean disconnectCleanupStarted = new AtomicBoolean(false);
 
     public byte timeWait = 100;
     public boolean sentKey;
@@ -78,6 +81,14 @@ public class MySession extends Session {
     public MySession(Socket socket) {
         super(socket);
         ipAddress = socket.getInetAddress().getHostAddress();
+    }
+
+    public boolean markDisconnectCleanupStarted() {
+        return disconnectCleanupStarted.compareAndSet(false, true);
+    }
+
+    public boolean isDisconnectCleanupStarted() {
+        return disconnectCleanupStarted.get();
     }
 
     @Override
