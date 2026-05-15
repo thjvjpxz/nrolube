@@ -438,8 +438,10 @@ public class Controller implements IMessageHandler {
                         }
                         int toX = player.location.x;
                         int toY = player.location.y;
+                        boolean isFlyingMove = false;
                         try {
                             byte b = _msg.reader().readByte();
+                            isFlyingMove = b == 1;
                             toX = _msg.reader().readShort();
                             try {
                                 toY = _msg.reader().readShort();
@@ -449,12 +451,12 @@ public class Controller implements IMessageHandler {
                                     && Util.getDistance(player.location.x, player.location.y, toX, toY) > 500) {
                                 return;
                             }
-                            if (b == 1) {
+                            if (isFlyingMove) {
                                 AchievementService.gI().checkDoneTaskFly(player, player.location.x - toX);
                             }
                         } catch (IOException e) {
                         }
-                        PlayerService.gI().playerMove(player, toX, toY);
+                        PlayerService.gI().playerMove(player, toX, toY, isFlyingMove);
                     }
                     break;
                 case -74:
