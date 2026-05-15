@@ -296,14 +296,14 @@ public class ServerManager {
                 @Override
                 public void sessionDisconnect(ISession session) {
                     try {
-                        String ip = session.getIP();
-                        if (CLIENTS.containsKey(ip)) {
-                            int n = Integer.parseInt(String.valueOf(CLIENTS.get(ip)));
-                            if (n > 1) {
-                                CLIENTS.put(ip, n - 1);
-                            } else {
-                                CLIENTS.remove(ip);
-                            }
+                        if (session == null) {
+                            Logger.warning("sessionDisconnect called with null session");
+                            return;
+                        }
+                        if (!(session instanceof MySession)) {
+                            Logger.warning("sessionDisconnect received non-MySession: " + session.getClass().getName());
+                            session.disconnect();
+                            return;
                         }
                         Client.gI().kickSession((MySession) session);
                     } catch (Exception e) {
@@ -326,18 +326,20 @@ public class ServerManager {
     }
 
     private boolean canConnectWithIp(String ipAddress) {
-        Object o = CLIENTS.get(ipAddress);
-        if (o == null) {
-            CLIENTS.put(ipAddress, 1);
-            return true;
-        } else {
-            int n = Integer.parseInt(String.valueOf(o));
-            if (n < Manager.MAX_PER_IP) {
-                n++;
-                CLIENTS.put(ipAddress, n);
+        synchronized (CLIENTS) {
+            Object o = CLIENTS.get(ipAddress);
+            if (o == null) {
+                CLIENTS.put(ipAddress, 1);
                 return true;
             } else {
-                return false;
+                int n = Integer.parseInt(String.valueOf(o));
+                if (n < Manager.MAX_PER_IP) {
+                    n++;
+                    CLIENTS.put(ipAddress, n);
+                    return true;
+                } else {
+                    return false;
+                }
             }
         }
     }
@@ -383,14 +385,24 @@ public class ServerManager {
     }
 
     public void disconnect(MySession session) {
-        Object o = CLIENTS.get(session.getIP());
-        if (o != null) {
-            int n = Integer.parseInt(String.valueOf(o));
-            n--;
-            if (n < 0) {
-                n = 0;
+        String ip = session.ipAddress;
+        if (ip == null) {
+            ip = session.getIP();
+        }
+        if (ip == null) {
+            return;
+        }
+        synchronized (CLIENTS) {
+            Object o = CLIENTS.get(ip);
+            if (o != null) {
+                int n = Integer.parseInt(String.valueOf(o));
+                n--;
+                if (n <= 0) {
+                    CLIENTS.remove(ip);
+                } else {
+                    CLIENTS.put(ip, n);
+                }
             }
-            CLIENTS.put(session.getIP(), n);
         }
     }
 
