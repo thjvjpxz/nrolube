@@ -53,6 +53,12 @@ public final class Collector implements Runnable {
                 Logger.logException(Collector.class, exception,
                     "sessionDisconnect ném -- save logout có thể bị cắt cho "
                         + (currentSession != null ? currentSession.getIP() : "unknown"));
+            } finally {
+                if (currentSession != null && currentSession.isConnected()) {
+                    Logger.warning("Fallback disconnect cho session " + currentSession.getIP()
+                        + " sau khi sessionDisconnect thất bại/bị chặn");
+                    currentSession.disconnect();
+                }
             }
             return;
         }
@@ -67,6 +73,12 @@ public final class Collector implements Runnable {
                 Logger.logException(Collector.class, exception,
                     "sessionDisconnect ném (loop exit) cho "
                         + (currentSession != null ? currentSession.getIP() : "unknown"));
+            } finally {
+                if (currentSession.isConnected()) {
+                    Logger.warning("Fallback disconnect cho session " + currentSession.getIP()
+                        + " sau khi loop exit");
+                    currentSession.disconnect();
+                }
             }
         }
     }
