@@ -77,21 +77,12 @@ public class Broly extends Boss {
         }
         if (this.zone != null) {
             try {
-
-                int zoneid = Util.nextInt(2, this.zone.map.zones.size() - 1);
-
-                while (zoneid < this.zone.map.zones.size() && this.zone.map.zones.get(zoneid).getBosses().size() > 0) {
-                    zoneid++;
-                }
-
-                if (zoneid < this.zone.map.zones.size()) {
-                    this.zone = this.zone.map.zones.get(zoneid);
+                Zone picked = findAvailableJoinZone(2, this.zone.map.zones.size() - 1);
+                if (picked != null) {
+                    this.zone = picked;
                 } else {
-                    if (this.id == BossID.BROLY) {
-                        this.changeStatus(BossStatus.DIE);
-                        return;
-                    }
-                    this.zone = this.zone.map.zones.get(Util.nextInt(2, this.zone.map.zones.size() - 1));
+                    this.changeStatus(BossStatus.RESPAWN);
+                    return;
                 }
 
                 if (this.zone.zoneId < 2) {
@@ -101,7 +92,7 @@ public class Broly extends Boss {
                 ChangeMapService.gI().changeMap(this, this.zone, -1, -1);
                 this.changeStatus(BossStatus.CHAT_S);
             } catch (Exception e) {
-                this.changeStatus(BossStatus.REST);
+                this.changeStatus(BossStatus.RESPAWN);
             }
         } else {
             this.changeStatus(BossStatus.RESPAWN);

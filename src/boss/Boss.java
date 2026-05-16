@@ -428,6 +428,26 @@ public class Boss extends Player implements IBoss, IBossOutfit {
         this.changeToTypeNonPK();
     }
 
+    protected long lastJoinFailLog;
+
+    protected Zone findAvailableJoinZone(int fromZoneId, int toZoneId) {
+        List<Zone> zones = this.zone.map.zones;
+        int size = zones.size();
+        if (fromZoneId >= size || fromZoneId > toZoneId) {
+            return null;
+        }
+        int count = toZoneId - fromZoneId + 1;
+        int offset = Util.nextInt(0, count - 1);
+        for (int i = 0; i < count; i++) {
+            int idx = fromZoneId + (offset + i) % count;
+            Zone z = zones.get(idx);
+            if (z.getBosses().isEmpty()) {
+                return z;
+            }
+        }
+        return null;
+    }
+
     @Override
     public void joinMap() {
         if (zoneFinal != null) {
@@ -454,31 +474,23 @@ public class Boss extends Player implements IBoss, IBossOutfit {
                 if (this.currentLevel == 0) {
                     if (this.parentBoss == null) {
                         int zoneid = 0;
-                        // this.zone.map.mapId == 80 || this.zone.map.mapId == 103 ||
-                        // this.zone.map.mapId == 97 || this.zone.map.mapId == 102
-                        // Chỉ cho boss xuất hiện từ khu 2 trở lên ở map thường
                         if (this.isZone01SpawnDisabled && this.zone.map.zones.size() > 2) {
-                            zoneid = Util.nextInt(2, this.zone.map.zones.size() - 1);
-                            while (zoneid < this.zone.map.zones.size()
-                                    && !this.zone.map.zones.get(zoneid).getBosses().isEmpty()) {
-                                zoneid++;
-                            }
-
-                            if (zoneid < this.zone.map.zones.size()) {
-                                this.zone = this.zone.map.zones.get(zoneid);
+                            Zone picked = findAvailableJoinZone(2, this.zone.map.zones.size() - 1);
+                            if (picked != null) {
+                                this.zone = picked;
                             } else {
-                                this.changeStatus(BossStatus.REST);
-                                this.zone = null;
-                                this.lastZone = null;
+                                if (Util.canDoWithTime(lastJoinFailLog, 10000)) {
+                                    Logger.warning("Boss " + this.name + " (id=" + this.id + ") không tìm được zone trống tại map " + this.zone.map.mapName + " (tổng " + this.zone.map.zones.size() + " khu), sẽ retry sau\n");
+                                    lastJoinFailLog = System.currentTimeMillis();
+                                }
+                                this.changeStatus(BossStatus.RESPAWN);
                                 return;
                             }
                         } else {
-                            // Check trong khu lớn hơn 10 người chuyển sang khu n + 1
                             while (zoneid < this.zone.map.zones.size()
                                     && this.zone.map.zones.get(zoneid).getNumOfPlayers() > 10) {
                                 zoneid++;
                             }
-                            // Check trong khu có boss sẽ chuyển sang khu n + 1
                             while (zoneid < this.zone.map.zones.size()
                                     && !this.zone.map.zones.get(zoneid).getBosses().isEmpty()) {
                                 zoneid++;
@@ -506,7 +518,7 @@ public class Boss extends Player implements IBoss, IBossOutfit {
                 this.notifyJoinMap();
                 this.changeStatus(BossStatus.CHAT_S);
             } catch (Exception e) {
-                this.changeStatus(BossStatus.REST);
+                this.changeStatus(BossStatus.RESPAWN);
                 if (error < 5) {
                     Logger.error("Lỗi : " + e + "\n");
                     error++;
