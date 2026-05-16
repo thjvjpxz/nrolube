@@ -19,6 +19,7 @@ public class RuongDo extends Npc {
     public void openBaseMenu(Player player) {
         if (canOpenNpc(player)) {
             InventoryService.gI().sendItemBox(player);
+            InventoryService.gI().openBox(player);
         }
     }
 

@@ -665,7 +665,6 @@ public class InventoryService {
             msg.cleanup();
         } catch (Exception e) {
         }
-        this.openBox(player);
     }
 
     public void openBox(Player player) {
