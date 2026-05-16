@@ -597,6 +597,10 @@ public class Mob {
     public List<ItemMap> getItemMobReward(Player player, int x, int yEnd) {
         List<ItemMap> list = new ArrayList<>();
 
+        // Lưu trạng thái attacker ban đầu để check nội tại 23
+        Player originalAttacker = player;
+        boolean isRealPlayerKiller = player.isPl();
+
         // Xử lý Linh Đánh Thuê
         if (player instanceof LinhDanhThue) {
             player = ((LinhDanhThue) player).master;
@@ -674,6 +678,14 @@ public class Mob {
         }
         if (Util.isTrue(10 * pt4la, 100) || player.actived() && Util.isTrue(1 * pt4la, 10)) {
             int vang = Util.nextInt(1000, 30000) * nt;
+            // Nội tại 23: chỉ áp dụng khi chính player thật giết quái
+            if (isRealPlayerKiller && originalAttacker.playerIntrinsic != null
+                    && originalAttacker.playerIntrinsic.intrinsic != null
+                    && originalAttacker.playerIntrinsic.intrinsic.id == 23) {
+                vang += vang * originalAttacker.playerIntrinsic.intrinsic.param1 / 100;
+            }
+            // Cộng tlGold theo kiểu NRORetro trên lượng vàng đã được tăng
+            vang += vang * player.nPoint.tlGold / 100;
             if (vang < 10000) {
                 list.add(new ItemMap(zone, 189, vang, x, yEnd, player.id));
             } else if (vang < 20000) {

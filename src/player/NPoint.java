@@ -2459,7 +2459,6 @@ public class NPoint {
         setCaiTrang();
 
         setThuCuoi();
-        setIsCrit();
 
         setPet();
 
@@ -2467,8 +2466,11 @@ public class NPoint {
 
         setDeoLung();
 
+        // Refresh intrinsic từ player để nội tại 25 ăn ngay sau login/đổi nội tại
+        this.intrinsic = this.player.playerIntrinsic != null ? this.player.playerIntrinsic.intrinsic : null;
+        setIsCrit();
+
         long dameAttack = this.dame;
-        intrinsic = this.player.playerIntrinsic.intrinsic;
         percentDameIntrinsic = 0;
         int percentDameSkill = 0;
         byte percentXDame = 0;
@@ -3000,8 +3002,10 @@ public class NPoint {
             if (this.player.satellite != null && this.player.satellite.isIntelligent) {
                 tiemNang += tn / 5;
             }
-            if (this.intrinsic != null && this.intrinsic.id == 24) {
-                tiemNang += ((long) tiemNang * this.intrinsic.param1 / 100);
+            // Refresh intrinsic từ player để bonus ăn ngay sau login/đổi nội tại
+            Intrinsic currentIntrinsic = this.player.playerIntrinsic != null ? this.player.playerIntrinsic.intrinsic : null;
+            if (currentIntrinsic != null && currentIntrinsic.id == 24) {
+                tiemNang += ((long) tiemNang * currentIntrinsic.param1 / 100);
             }
             // if (this.power >= 60000000000L) {
             // tiemNang -= ((long) tiemNang * 20 / 100);
