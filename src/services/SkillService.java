@@ -20,6 +20,7 @@ import player.Pet;
 import player.Player;
 import player.PlayerClone;
 import skill.Skill;
+import player.LinhDanhThue;
 import player.NewSkill;
 import network.Message;
 
@@ -985,7 +986,8 @@ public class SkillService {
                             if (!player.equals(pl) && canAttackPlayer(player, pl)
                                     && Util.getDistance(player, pl) <= rangeBom) {
                                 dame = pl.isBoss ? player.effectSkill.isMonkey ? dame / 3 : dame / 2 : dame;
-                                pl.injured(player, dame, MapService.gI().isMapYardart(player.zone.map.mapId), false);
+                                Player realAttacker = resolveBossCreditAttacker(player, pl);
+                                pl.injured(realAttacker, dame, MapService.gI().isMapYardart(player.zone.map.mapId), false);
                                 PlayerService.gI().sendInfoHpMpMoney(pl);
                                 Service.gI().Send_Info_NV(pl);
                             }
@@ -1168,6 +1170,29 @@ public class SkillService {
         }
     }
 
+    private Player resolveBossCreditAttacker(Player attacker, Player target) {
+        if (target == null || !target.isBoss || attacker == null) {
+            return attacker;
+        }
+        if (attacker instanceof Pet) {
+            Player master = ((Pet) attacker).master;
+            return master != null ? master : attacker;
+        }
+        if (attacker instanceof LinhDanhThue) {
+            Player master = ((LinhDanhThue) attacker).master;
+            return master != null ? master : attacker;
+        }
+        if (attacker instanceof PlayerClone) {
+            Player master = ((PlayerClone) attacker).master;
+            return master != null ? master : attacker;
+        }
+        if (attacker instanceof boss.boss_manifest.Commeson.PhanThan) {
+            Player playerAtt = ((boss.boss_manifest.Commeson.PhanThan) attacker).getPlayerAtt();
+            return playerAtt != null ? playerAtt : attacker;
+        }
+        return attacker;
+    }
+
     private void playerAttackPlayer(Player plAtt, Player plInjure, boolean miss) {
         applyStealthBonus(plAtt, plInjure, null);
         if (plInjure.effectSkill.anTroi) {
@@ -1193,7 +1218,8 @@ public class SkillService {
         if (plAtt != null && plAtt.nPoint.isFireSoul) {
             dameAttack = dameAttack + plInjure.nPoint.hpMax * 5 / 10000;
         }
-        long dameHit = plInjure.injured(plAtt, miss ? 0 : dameAttack, false, false);
+        Player realAttacker = resolveBossCreditAttacker(plAtt, plInjure);
+        long dameHit = plInjure.injured(realAttacker, miss ? 0 : dameAttack, false, false);
         if (plAtt.playerSkill == null) {
             return;
         }

@@ -655,31 +655,46 @@ public class Boss extends Player implements IBoss, IBossOutfit {
         return 500;
     }
 
+    protected Player resolveKillOwner(Player plKill) {
+        if (plKill == null) {
+            return null;
+        }
+        if (plKill instanceof Pet) {
+            return ((Pet) plKill).master;
+        }
+        if (plKill instanceof LinhDanhThue) {
+            return ((LinhDanhThue) plKill).master;
+        }
+        if (plKill instanceof PlayerClone) {
+            return ((PlayerClone) plKill).master;
+        }
+        if (plKill instanceof PhanThan) {
+            return ((PhanThan) plKill).getPlayerAtt();
+        }
+        return plKill;
+    }
+
     @Override
     public void die(Player plKill) {
-        if (plKill != null) {
-            if (plKill instanceof LinhDanhThue) {
-                plKill = ((LinhDanhThue) plKill).master;
-            }
-            if (plKill instanceof PhanThan) {
-                plKill = ((PhanThan) plKill).getPlayerAtt();
-            }
-            reward(plKill);
-            plKill.sosumenhplayer.addCountTask(2);
-            ServerNotify.gI().notify(plKill.name + ": Đã tiêu diệt được " + this.name + " mọi người đều ngưỡng mộ.");
+        Player realKill = resolveKillOwner(plKill);
+        if (realKill != null) {
+            reward(realKill);
+            realKill.sosumenhplayer.addCountTask(2);
+            ServerNotify.gI().notify(realKill.name + ": Đã tiêu diệt được " + this.name + " mọi người đều ngưỡng mộ.");
         }
         this.changeStatus(BossStatus.DIE);
     }
 
     @Override
     public void reward(Player plKill) {
-        if (plKill instanceof PhanThan) {
-            plKill = ((PhanThan) plKill).getPlayerAtt();
+        Player realKill = resolveKillOwner(plKill);
+        if (realKill == null) {
+            return;
         }
-        TaskService.gI().checkDoneTaskKillBoss(plKill, this);
-        plKill.event.addEventPointBHM(1);
+        TaskService.gI().checkDoneTaskKillBoss(realKill, this);
+        realKill.event.addEventPointBHM(1);
 
-        Service.gI().sendThongBao(plKill, "Bạn đã Đã tiêu diệt được " + this.name + " và nhận 1 điểm Bà Hạt Mít");
+        Service.gI().sendThongBao(realKill, "Bạn đã tiêu diệt được " + this.name + " và nhận 1 điểm Bà Hạt Mít");
     }
 
     @Override
