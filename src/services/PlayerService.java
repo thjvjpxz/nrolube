@@ -137,6 +137,10 @@ public class PlayerService {
     }
 
     public void playerMove(Player player, int x, int y) {
+        playerMove(player, x, y, false);
+    }
+
+    public void playerMove(Player player, int x, int y, boolean isFlyingMove) {
         if (player.zone == null) {
             return;
         }
@@ -184,12 +188,7 @@ public class PlayerService {
                 player.clone.followMaster();
             }
             if (player.isPl()) {
-                try {
-                    int yPhysic = player.zone.map.yPhysicInTop(player.location.x, player.location.y);
-                    player.isFly = yPhysic > player.location.y;
-                } catch (Exception e) {
-                    player.isFly = false;
-                }
+                player.isFly = isFlyingMove;
                 if (player.isFly && player.getMount() == -1) {
                     long mp = player.nPoint.mpg / (100 * (player.effectSkill.isMonkey ? 2 : 1));
                     hoiPhuc(player, 0, -mp);
