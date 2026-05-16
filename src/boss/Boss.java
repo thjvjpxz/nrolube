@@ -78,7 +78,6 @@ public class Boss extends Player implements IBoss, IBossOutfit {
     public boolean isNotifyDisabled;
     public boolean isZone01SpawnDisabled;
 
-    private long lastTimeCheck;
 
     public Boss(int id, boolean isNotifyDisabled, boolean isZone01SpawnDisabled, BossData... data) throws Exception {
         this(id, data);
@@ -344,22 +343,22 @@ public class Boss extends Player implements IBoss, IBossOutfit {
                 || (this.newSkill != null && this.newSkill.isStartSkillSpecial)) {
             return;
         }
-        // Tối ưu: Khi boss đang ACTIVE/CHAT_S/AFK mà zone không có player thật
-        // → skip logic tấn công/di chuyển/chat để giảm CPU
-        // Các trạng thái REST/RESPAWN/JOIN_MAP/DIE/CHAT_E/LEAVE_MAP vẫn xử lý bình
-        // thường
-        if (this.zone != null && !this.zone.hasRealPlayer()) {
-            switch (this.bossStatus) {
-                case CHAT_S, AFK, ACTIVE -> {
-                    return; // Sleep: không cần xử lý khi không có player
-                }
-                default -> {
-                } // Các trạng thái khác vẫn xử lý bình thường
-            }
-        }
+        // Kiểm tra timer 15 phút trước khi tối ưu CPU
         switch (this.bossStatus) {
             case CHAT_S, AFK, ACTIVE ->
                 this.autoLeaveMap();
+        }
+        // Tối ưu: Khi boss đang ACTIVE/CHAT_S/AFK mà zone không có player thật
+        // → skip logic tấn công/di chuyển/chat để giảm CPU
+        // Các trạng thái REST/RESPAWN/JOIN_MAP/DIE/LEAVE_MAP vẫn xử lý bình thường
+        if (this.zone != null && !this.zone.hasRealPlayer()) {
+            switch (this.bossStatus) {
+                case CHAT_S, AFK, ACTIVE -> {
+                    return;
+                }
+                default -> {
+                }
+            }
         }
         switch (this.bossStatus) {
             case REST ->
