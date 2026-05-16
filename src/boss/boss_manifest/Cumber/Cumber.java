@@ -86,16 +86,11 @@ public class Cumber extends Boss {
 
     @Override
     public void autoLeaveMap() {
-        if (Util.canDoWithTime(st, timeLeaveMap)) {
-            if (Util.isTrue(1, 2)) {
-                this.leaveMap();
-            } else {
-                this.leaveMapNew();
-            }
-        }
-        if (this.zone != null && this.zone.getNumOfPlayers() > 0) {
+        if (this.zone != null && this.zone.hasRealPlayer()) {
             st = System.currentTimeMillis();
             timeLeaveMap = Util.nextInt(300000, 900000);
+        } else if (Util.canDoWithTime(st, timeLeaveMap)) {
+            this.leaveMapForImmediateRespawn();
         }
     }
 

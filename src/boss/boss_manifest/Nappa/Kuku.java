@@ -8,7 +8,6 @@ package boss.boss_manifest.Nappa;
 
 import boss.Boss;
 import boss.BossID;
-import boss.BossStatus;
 import boss.BossesData;
 import utils.Util;
 
@@ -28,11 +27,10 @@ public class Kuku extends Boss {
 
     @Override
     public void autoLeaveMap() {
-        if (Util.canDoWithTime(st, 900000)) {
-            this.changeStatus(BossStatus.LEAVE_MAP);
+        if (this.zone != null && this.zone.hasRealPlayer()) {
+            st = System.currentTimeMillis();
+        } else if (Util.canDoWithTime(st, 900000)) {
+            this.leaveMapForImmediateRespawn();
         }
-//        if (this.zone != null && this.zone.getNumOfPlayers() > 0) {
-//            st = System.currentTimeMillis();
-//        }
     }
 }

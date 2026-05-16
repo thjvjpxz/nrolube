@@ -113,11 +113,12 @@ public class SonTinh extends Boss {
 
     @Override
     public void autoLeaveMap() {
-        if (Util.canDoWithTime(st, 900000)) {
-            this.leaveMapNew();
-        }
-        if (this.zone != null && this.zone.getNumOfPlayers() > 0) {
+        if (this.zone != null && this.zone.hasRealPlayer()) {
             st = System.currentTimeMillis();
+        } else if (Util.canDoWithTime(st, 900000)) {
+            this.isReward = false;
+            this.playerReward = null;
+            this.leaveMapForImmediateRespawn();
         }
     }
 

@@ -190,8 +190,11 @@ public class LanCon extends Boss {
 
     @Override
     public void autoLeaveMap() {
-        if (Util.canDoWithTime(st, timeLeave)) {
-            this.leaveMapNew();
+        if (this.zone != null && this.zone.hasRealPlayer()) {
+            st = System.currentTimeMillis();
+        } else if (Util.canDoWithTime(st, timeLeave)) {
+            this.playerId = -1;
+            this.leaveMapForImmediateRespawn();
         }
     }
 

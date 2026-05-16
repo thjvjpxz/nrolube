@@ -750,6 +750,23 @@ public class Boss extends Player implements IBoss, IBossOutfit {
         this.wakeupAnotherBossWhenDisappear();
     }
 
+    /**
+     * Rời map và vào RESPAWN ngay, dùng cho timeout/despawn khi không có người.
+     * Không qua REST, không set lastTimeRest, không reward.
+     */
+    protected void leaveMapForImmediateRespawn() {
+        if (this.zone != null) {
+            ChangeMapService.gI().exitMap(this);
+            if (this.pet != null && this.pet.zone != null) {
+                ChangeMapService.gI().exitMap(this.pet);
+            }
+        }
+        this.lastZone = null;
+        this.currentLevel = this.data.length - 1;
+        this.wakeupAnotherBossWhenDisappear();
+        this.changeStatus(BossStatus.RESPAWN);
+    }
+
     @Override
     public synchronized long injured(Player plAtt, long damage, boolean piercing, boolean isMobAttack) {
         if (!this.isDie()) {

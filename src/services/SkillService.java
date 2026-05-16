@@ -200,7 +200,6 @@ public class SkillService {
                 }
 
                 case Skill.PHAN_THAN -> {
-                    Logger.warning(" useNewSkillNotFocus sd skill phan than! \n");
                     // Gửi hiệu ứng khói giống hệt BIEN_HINH_SUPER (skillId 97)
                     try {
                         Message msgPT2 = new Message(-45);

@@ -56,11 +56,10 @@ public class SO2_NM extends Boss {
 
     @Override
     public void autoLeaveMap() {
-        if (Util.canDoWithTime(st, 900000)) {
-            this.leaveMapNew();
-        }
-        if (this.zone != null && this.zone.getNumOfPlayers() > 0) {
+        if (this.zone != null && this.zone.hasRealPlayer()) {
             st = System.currentTimeMillis();
+        } else if (Util.canDoWithTime(st, 900000)) {
+            this.leaveMapForImmediateRespawn();
         }
     }
 
