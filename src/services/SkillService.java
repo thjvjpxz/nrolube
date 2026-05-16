@@ -985,9 +985,9 @@ public class SkillService {
                         for (Player pl : playersMap) {
                             if (!player.equals(pl) && canAttackPlayer(player, pl)
                                     && Util.getDistance(player, pl) <= rangeBom) {
-                                dame = pl.isBoss ? player.effectSkill.isMonkey ? dame / 3 : dame / 2 : dame;
+                                long targetDame = pl.isBoss ? player.effectSkill.isMonkey ? dame / 3 : dame / 2 : dame;
                                 Player realAttacker = resolveBossCreditAttacker(player, pl);
-                                pl.injured(realAttacker, dame, MapService.gI().isMapYardart(player.zone.map.mapId), false);
+                                pl.injured(realAttacker, targetDame, MapService.gI().isMapYardart(player.zone.map.mapId), false);
                                 PlayerService.gI().sendInfoHpMpMoney(pl);
                                 Service.gI().Send_Info_NV(pl);
                             }
