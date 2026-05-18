@@ -1526,10 +1526,8 @@ public class UseItem {
                 pl.itemTime.isUseGiapXen = true;
                 break;
             case 381: // cuồng nộ
-                if (!pl.itemTime.isUseCuongNo) {
-                    pl.itemTime.lastTimeCuongNo = System.currentTimeMillis();
-                    pl.itemTime.isUseCuongNo = true;
-                }
+                pl.itemTime.lastTimeCuongNo = System.currentTimeMillis();
+                pl.itemTime.isUseCuongNo = true;
                 // Service.gI().point(pl);
                 break;
             case 385: // ẩn danh
