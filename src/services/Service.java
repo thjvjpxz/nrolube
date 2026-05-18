@@ -1646,7 +1646,7 @@ public class Service {
                 msg.writer().writeShort(pl.pet.nPoint.stamina); // stamina
                 msg.writer().writeShort(pl.pet.nPoint.maxStamina); // stamina full
                 msg.writer().writeByte(pl.pet.nPoint.crit); // crit
-                msg.writer().writeShort(pl.pet.nPoint.def); // def
+                msg.writer().writeInt(pl.pet.nPoint.def); // def
                 int sizeSkill = pl.pet.playerSkill.skills.size();
                 msg.writer().writeByte(sizeSkill); // count pet skill
                 for (int i = 0; i < sizeSkill; i++) {
