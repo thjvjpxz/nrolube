@@ -792,6 +792,10 @@ public class SkillService {
                                 if (player.isPet && ((Pet) player).master.equals(pl)) {
                                     continue;
                                 }
+                                int reducedTimeStun = EffectSkillService.gI().getReducedBlindTime(pl, timeStun);
+                                if (reducedTimeStun <= 0) {
+                                    continue;
+                                }
                                 String[] text = { "Mắt của ta", "Chói mắt quá", "Đui mắt rồi", "Mù mắt rồi" };
                                 Service.gI().chat(pl, text[Util.nextInt(text.length)]);
                                 EffectSkillService.gI().startStun(pl, System.currentTimeMillis(), timeStun);
@@ -1049,7 +1053,10 @@ public class SkillService {
                 if (Util.isTrue(tiLeChoang, 100)) {
                     if (plInjure != null) {
                         // Logger.warning("Stealth Stun applied to Player: " + plInjure.name + "\n");
-                        EffectSkillService.gI().startStun(plInjure, System.currentTimeMillis(), timeChoang);
+                        int reducedTimeChoang = EffectSkillService.gI().getReducedBlindTime(plInjure, timeChoang);
+                        if (reducedTimeChoang > 0) {
+                            EffectSkillService.gI().startStun(plInjure, System.currentTimeMillis(), timeChoang);
+                        }
                     } else if (mobInjure != null) {
                         // Logger.warning("Stealth Stun applied to Mob\n");
                         mobInjure.effectSkill.startStun(System.currentTimeMillis(), timeChoang);

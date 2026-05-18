@@ -164,8 +164,12 @@ public class EffectSkillService {
     // Thái dương hạ san &&&&****************************************************
     // player ăn choáng thái dương hạ san
     public void startStun(Player player, long lastTimeStartBlind, int timeBlind) {
+        int reducedTimeBlind = getReducedBlindTime(player, timeBlind);
+        if (reducedTimeBlind <= 0) {
+            return;
+        }
         player.effectSkill.lastTimeStartStun = lastTimeStartBlind;
-        player.effectSkill.timeStun = timeBlind;
+        player.effectSkill.timeStun = reducedTimeBlind;
         player.effectSkill.isStun = true;
         sendEffectPlayer(player, player, TURN_ON_EFFECT, BLIND_EFFECT);
     }
@@ -226,6 +230,21 @@ public class EffectSkillService {
         player.effectSkill.isBlindDCTT = true;
         player.effectSkill.lastTimeBlindDCTT = lastTimeDCTT;
         player.effectSkill.timeBlindDCTT = timeBlindDCTT;
+    }
+
+    public int getReducedBlindTime(Player player, int timeBlind) {
+        if (player == null || player.nPoint == null || timeBlind <= 0) {
+            return timeBlind;
+        }
+        int reducedTime = timeBlind;
+        if (player.nPoint.giamThoiGianBiMu > 0) {
+            int percent = Math.min(player.nPoint.giamThoiGianBiMu, 100);
+            reducedTime -= reducedTime * percent / 100;
+        }
+        if (player.nPoint.giamGiayBiMu > 0) {
+            reducedTime -= player.nPoint.giamGiayBiMu * 1000;
+        }
+        return Math.max(reducedTime, 0);
     }
 
     public void removeBlindDCTT(Player player) {
@@ -622,7 +641,7 @@ public class EffectSkillService {
             msg.writer().writeByte(players.size());
             for (Player pl : players) {
                 msg.writer().writeInt((int) pl.id);
-                msg.writer().writeByte(timeStun / 1000);
+                msg.writer().writeByte(getReducedBlindTime(pl, timeStun) / 1000);
             }
             Service.gI().sendMessAllPlayerInMap(plUseSkill, msg);
             msg.cleanup();

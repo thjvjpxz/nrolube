@@ -79,6 +79,8 @@ public class NPoint {
     public boolean teleport;
     public int hpbang, mpbang, damebang, critbang;
     public boolean khangTDHS;
+    public int giamThoiGianBiMu;
+    public int giamGiayBiMu;
 
     public void initPowerLimit() {
         powerLimit = PowerLimitManager.getInstance().get(limitPower);
@@ -462,6 +464,12 @@ public class NPoint {
                             break;
                         case 123: // Hồi trói
                             this.hoitroi += io.param;
+                            break;
+                        case 175: // Giảm thời gian bị mù theo %
+                            this.giamThoiGianBiMu += io.param;
+                            break;
+                        case 187: // Giảm thời gian bị mù theo giây
+                            this.giamGiayBiMu += io.param;
                             break;
                         case 153: // Kháng thái dương hạ san
                             this.tlBom += io.param;
@@ -977,6 +985,12 @@ public class NPoint {
                 break;
             case 123: // Hồi trói
                 this.hoitroi += io.param;
+                break;
+            case 175: // Giảm thời gian bị mù theo %
+                this.giamThoiGianBiMu += io.param;
+                break;
+            case 187: // Giảm thời gian bị mù theo giây
+                this.giamGiayBiMu += io.param;
                 break;
             case 147: // +#% sức đánh
                 this.tlDame.add(io.param);
@@ -2382,6 +2396,8 @@ public class NPoint {
         this.wearingVoHinh = false;
         this.isKhongLanh = false;
         this.khangTDHS = false;
+        this.giamThoiGianBiMu = 0;
+        this.giamGiayBiMu = 0;
         this.isTanHinh = false;
         this.isHoaDa = false;
         this.isLamCham = false;
