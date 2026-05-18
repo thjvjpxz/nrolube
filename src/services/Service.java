@@ -1597,8 +1597,8 @@ public class Service {
             msg.writeLongByEmti(Util.maxIntValue(pl.pet.nPoint.hpg), cn.readInt);
             msg.writeLongByEmti(Util.maxIntValue(pl.pet.nPoint.mpg), cn.readInt);
             msg.writeLongByEmti(Util.maxIntValue(pl.pet.nPoint.dameg), cn.readInt);
-            msg.writer().writeInt(pl.pet.nPoint.defg);
-            msg.writer().writeInt(pl.pet.nPoint.critg);
+            msg.writer().writeShort(pl.pet.nPoint.defg);
+            msg.writer().writeByte(pl.pet.nPoint.critg);
 
             pl.sendMessage(msg);
             msg.cleanup();
