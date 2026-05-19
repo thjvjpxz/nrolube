@@ -758,7 +758,7 @@ public class NpcFactory {
                                         + "mpg[số] - Set KI+\t\t\tdefg[số] - Set giáp\n"
                                         + "crg[số] - Set chí mạng\t\tntask[số] - Set NV\n"
                                         + "i [id] [num] - Tạo item\t\titem - Tặng item\n"
-                                        + "getitem - Nhận item";
+                                        + "getitem - Nhận item\t\t\treshop - Reload shop";
                                 NpcService.gI().createMenuConMeo(player, ConstNpc.MENU_ADMIN_CMD, -1, cmdList, "Đóng");
                             }
                         }

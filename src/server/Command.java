@@ -62,6 +62,10 @@ public class Command {
                 models.GiftCode.GiftCodeService.gI().updateGiftCode();
                 GiftCodeManager.gI().checkInfomationGiftCode(player);
                 return true;
+            } else if (text.equals("reshop")) {
+                Manager.gI().updateShop();
+                Service.gI().sendThongBao(player, "Đã reload shop (" + Manager.SHOPS.size() + ")");
+                return true;
             } else if (text.equals("next nv")) {
                 // Tăng id nhiệm vụ lên 1: [1,0,0,xxx] => [2,0,0,xxx]
                 int currentTaskId = player.playerTask.taskMain.id;
