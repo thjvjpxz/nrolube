@@ -106,19 +106,15 @@ public class MobRewardService {
         Zone zone = mob.zone;
         int mapId = zone.map.mapId;
         int mobTempId = mob.tempId;
-        int pt4la = mob.pt4la; // Hệ số nhân tỷ lệ
+        int pt4la = mob.pt4la;
 
-        // Lấy player gốc (nếu là pet thì lấy master)
-        Player realPlayer = getRealPlayer(player);
+        Player dropOwner = getRealPlayer(player);
 
-        // 1. Lọc danh sách reward thỏa mãn điều kiện logic
         List<MobReward> potentialRewards = new ArrayList<>();
         for (MobReward reward : rewards) {
-            // Check Mob ID
             if (reward.mobId != -1 && reward.mobId != mobTempId) {
                 continue;
             }
-            // Check Map
             if (reward.mapType != null && !reward.mapType.isEmpty()) {
                 if (!checkMapType(reward.mapType, mapId)) {
                     continue;
@@ -128,16 +124,13 @@ public class MobRewardService {
                     continue;
                 }
             }
-            // Check Event
             if (reward.eventKey != null && !checkEvent(reward.eventKey)) {
                 continue;
             }
-            // Check Gender
-            if (reward.gender != -1 && reward.gender != realPlayer.gender) {
+            if (reward.gender != -1 && reward.gender != dropOwner.gender) {
                 continue;
             }
-            // Check Condition
-            if (reward.conditionType != null && !checkCondition(reward.conditionType, realPlayer, mob)) {
+            if (reward.conditionType != null && !checkCondition(reward.conditionType, dropOwner, player, mob)) {
                 continue;
             }
             potentialRewards.add(reward);
@@ -158,17 +151,14 @@ public class MobRewardService {
             }
         }
 
-        // 3. Xử lý vật phẩm thường (logic cũ: random 1 rồi xét tỷ lệ)
         if (!normalRewards.isEmpty()) {
             MobReward selectedReward = normalRewards.get(Util.nextInt(normalRewards.size()));
-            processRewardDrop(selectedReward, drops, zone, x, yEnd, realPlayer, pt4la);
+            processRewardDrop(selectedReward, drops, zone, x, yEnd, dropOwner, pt4la);
         }
 
-        // 4. Xử lý vật phẩm sự kiện: random chọn 1 trong các event item,
-        // rồi dựa vào tỷ lệ rơi của nó để quyết định có rơi không
         if (!eventRewards.isEmpty()) {
             MobReward selectedEventReward = eventRewards.get(Util.nextInt(eventRewards.size()));
-            processRewardDrop(selectedEventReward, drops, zone, x, yEnd, realPlayer, pt4la);
+            processRewardDrop(selectedEventReward, drops, zone, x, yEnd, dropOwner, pt4la);
         }
 
         return drops;
@@ -266,25 +256,23 @@ public class MobRewardService {
     /**
      * Kiểm tra điều kiện đặc biệt
      */
-    private boolean checkCondition(String conditionType, Player player, Mob mob) {
+    private boolean checkCondition(String conditionType, Player dropOwner, Player conditionPlayer, Mob mob) {
         switch (conditionType) {
             case "FULL_SET_THAN":
-                return InventoryService.gI().fullSetThan(player);
+                return InventoryService.gI().fullSetThan(conditionPlayer);
             case "IS_BUMA":
-                return player.nPoint.isBuma;
+                return dropOwner.nPoint.isBuma;
             case "IS_QUAN_DI_BIEN":
-                return player.nPoint.isQuanDiBien;
+                return dropOwner.nPoint.isQuanDiBien;
             case "USE_MAYDO":
-                return player.itemTime.isUseMayDo && mob.tempId > 57 && mob.tempId < 66;
+                return dropOwner.itemTime.isUseMayDo && mob.tempId > 57 && mob.tempId < 66;
             case "USE_MAYDO2":
-                return player.itemTime.isUseMayDo2 && mob.tempId > 80 && mob.tempId < 81;
+                return dropOwner.itemTime.isUseMayDo2 && mob.tempId > 80 && mob.tempId < 81;
             case "HAS_NTK":
-                return InventoryService.gI().findItemNTK(player);
+                return InventoryService.gI().findItemNTK(dropOwner);
             case "DROP_SET_KICH_HOAT":
-                // Xử lý đặc biệt trong createItemMap
                 return true;
             case "DROP_SET_KICH_HOAT_VIP":
-                // Xử lý đặc biệt trong createItemMap
                 return true;
             default:
                 return true;
