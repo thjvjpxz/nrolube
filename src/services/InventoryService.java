@@ -114,6 +114,7 @@ public class InventoryService {
         if (where == 0) {
             itemThrow = player.inventory.itemsBody.get(index);
             removeItemBody(player, index);
+            player.setClothes.setup();
             sendItemBody(player);
             Service.gI().Send_Caitrang(player);
         } else if (where == 1) {
@@ -376,6 +377,7 @@ public class InventoryService {
             } else if (item.template.type == 75) {
                 Service.gI().sendTitle(player, item.template.part);
             }
+            player.setClothes.setup();
             sendItemBag(player);
             sendItemBody(player);
             Service.gI().point(player);
@@ -399,6 +401,7 @@ public class InventoryService {
             }
 
             player.inventory.itemsBody.set(index, putItemBag(player, item));
+            player.setClothes.setup();
             sendItemBag(player);
             sendItemBody(player);
             if (index == 8 || index == 10 || index == 11 || index == 12) {
@@ -481,6 +484,7 @@ public class InventoryService {
                             player.inventory.itemsBox.set(index, itemBody);
                             done = true;
 
+                            player.setClothes.setup();
                             sendItemBody(player);
                             Service.gI().point(player);
                             Service.gI().Send_Caitrang(player);
@@ -530,6 +534,7 @@ public class InventoryService {
         if (item.isNotNullItem()) {
             player.inventory.itemsBody.set(index, putItemBox(player, item));
             sortItems(player.inventory.itemsBag);
+            player.setClothes.setup();
             sendItemBody(player);
             sendItemBox(player);
             Service.gI().point(player);
@@ -539,6 +544,31 @@ public class InventoryService {
 
     private void __________________Gửi_danh_sách_item_cho_người_chơi________() {
         // **********************************************************************
+    }
+
+    private int getDisplayOptionParam(Player player, Item.ItemOption io) {
+        switch (io.optionTemplate.id) {
+            case 238:
+                return player.setClothes.nail >= 2 ? 1 : 0;
+            case 239:
+                return player.setClothes.nail >= 4 ? 1 : 0;
+            case 240:
+                return player.setClothes.nail >= 5 ? 1 : 0;
+            case 242:
+                return player.setClothes.cadicM >= 2 ? 1 : 0;
+            case 243:
+                return player.setClothes.cadicM >= 4 ? 1 : 0;
+            case 244:
+                return player.setClothes.cadicM >= 5 ? 1 : 0;
+            case 246:
+                return player.setClothes.thanVuTruKaio >= 2 ? 1 : 0;
+            case 247:
+                return player.setClothes.thanVuTruKaio >= 4 ? 1 : 0;
+            case 248:
+                return player.setClothes.thanVuTruKaio >= 5 ? 1 : 0;
+            default:
+                return io.param;
+        }
     }
 
     public void sendItemBag(Player player) {
@@ -573,7 +603,7 @@ public class InventoryService {
                         msg.writer().writeShort(param);
                     } else {
                         msg.writer().writeByte(item.itemOptions.get(j).optionTemplate.id);
-                        msg.writer().writeShort(item.itemOptions.get(j).param);
+                        msg.writer().writeShort(getDisplayOptionParam(player, item.itemOptions.get(j)));
                     }
                 }
             }
@@ -616,7 +646,7 @@ public class InventoryService {
                             msg.writer().writeShort(param);
                         } else {
                             msg.writer().writeByte(itemOption.optionTemplate.id);
-                            msg.writer().writeShort(itemOption.param);
+                            msg.writer().writeShort(getDisplayOptionParam(player, itemOption));
                         }
                     }
                 }
@@ -656,7 +686,7 @@ public class InventoryService {
                             msg.writer().writeShort(param);
                         } else {
                             msg.writer().writeByte(io.optionTemplate.id);
-                            msg.writer().writeShort(io.param);
+                            msg.writer().writeShort(getDisplayOptionParam(player, io));
                         }
                     }
                 }
