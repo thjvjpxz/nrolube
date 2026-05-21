@@ -19,7 +19,7 @@ public class EventManager {
 
     private static EventManager instance;
 
-    public static boolean LUNNAR_NEW_YEAR = false;
+    public static boolean LUNAR_NEW_YEAR = false;
 
     public static boolean INTERNATIONAL_WOMANS_DAY = false;
 
@@ -45,7 +45,7 @@ public class EventManager {
         syncFromEventConfig();
 
         new Default().init();
-        if (LUNNAR_NEW_YEAR) {
+        if (LUNAR_NEW_YEAR) {
             new LunarNewYear().init();
         }
         if (INTERNATIONAL_WOMANS_DAY) {
@@ -73,7 +73,7 @@ public class EventManager {
      * Để boss, NPC, item drop đều được quản lý bởi cùng 1 config
      */
     private void syncFromEventConfig() {
-        LUNNAR_NEW_YEAR = EventConfig.LUNAR_NEW_YEAR;
+        LUNAR_NEW_YEAR = EventConfig.LUNAR_NEW_YEAR;
         CHRISTMAS = EventConfig.CHRISTMAS_EVENT;
         HALLOWEEN = EventConfig.HALLOWEEN_EVENT;
         HUNG_VUONG = EventConfig.HUNG_VUONG_EVENT;

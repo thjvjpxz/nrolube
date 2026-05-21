@@ -241,12 +241,10 @@ public class MobRewardService {
      * Kiểm tra sự kiện có đang bật không
      */
     private boolean checkEvent(String eventKey) {
-        // Map các key cũ từ DB sang EventConfig mới
         return switch (eventKey) {
             case "CHRISTMAS", "christmas" -> config.EventConfig.CHRISTMAS_EVENT;
             case "HALLOWEEN", "halloween" -> config.EventConfig.HALLOWEEN_EVENT;
-            case "LUNNAR_NEW_YEAR", "LUNAR_NEW_YEAR", "lunar_new_year", "TET", "tet" ->
-                config.EventConfig.LUNAR_NEW_YEAR;
+            case "LUNAR_NEW_YEAR" -> config.EventConfig.LUNAR_NEW_YEAR;
             case "HUNG_VUONG", "hung_vuong" -> config.EventConfig.HUNG_VUONG_EVENT;
             case "TRUNG_THU", "trung_thu" -> config.EventConfig.TRUNG_THU_EVENT;
             default -> false;

@@ -23,7 +23,7 @@
 ## 4) Drop theo DB
 
 - `MobRewardService` hỗ trợ key event cho nhánh Tết:
-  - `LUNNAR_NEW_YEAR`, `LUNAR_NEW_YEAR`, `TET`, `tet`.
+  - `LUNAR_NEW_YEAR`.
 - Reward seasonal nên ưu tiên cấu hình qua `mob_reward`.
 
 ## 5) Checklist
