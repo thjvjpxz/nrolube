@@ -17,6 +17,7 @@ import utils.Util;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -51,6 +52,15 @@ public class MobRewardService {
                 PreparedStatement ps = con.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
 
+            boolean hasDropGroupColumn;
+            try {
+                rs.findColumn("drop_group");
+                hasDropGroupColumn = true;
+            } catch (SQLException e) {
+                hasDropGroupColumn = false;
+                System.err.println("[MobRewardService] Cột drop_group chưa tồn tại trong DB, derive từ dữ liệu cũ");
+            }
+
             while (rs.next()) {
                 MobReward reward = new MobReward();
                 reward.id = rs.getInt("id");
@@ -64,6 +74,17 @@ public class MobRewardService {
                 reward.eventKey = rs.getString("event_key");
                 reward.mapType = rs.getString("map_type");
                 reward.conditionType = rs.getString("condition_type");
+
+                // Đọc drop_group với fallback khi DB chưa migrate
+                if (hasDropGroupColumn) {
+                    String rawGroup = rs.getString("drop_group");
+                    if (rawGroup != null && !rawGroup.trim().isEmpty()) {
+                        reward.dropGroup = rawGroup.trim().toUpperCase();
+                    } // else giữ default "NORMAL"
+                } else {
+                    reward.dropGroup = deriveDropGroup(reward.eventKey, reward.conditionType);
+                }
+
                 reward.isRandomRange = rs.getBoolean("is_random_range");
                 reward.randomRange = rs.getInt("random_range");
                 reward.notifyGlobal = rs.getBoolean("notify_global");
@@ -93,7 +114,36 @@ public class MobRewardService {
     }
 
     /**
+     * Derive dropGroup từ dữ liệu cũ khi DB chưa có cột drop_group.
+     * Giữ tương thích logic tách normal/event cũ.
+     */
+    private static String deriveDropGroup(String eventKey, String conditionType) {
+        if (eventKey != null && !eventKey.trim().isEmpty()) {
+            return "EVENT";
+        }
+        if (conditionType != null && !conditionType.trim().isEmpty()) {
+            return "SPECIAL";
+        }
+        return "NORMAL";
+    }
+
+    // Group priority: SPECIAL > EQUIPMENT > GEM > MATERIAL > GOLD > NORMAL
+    private static final String[] GROUP_PRIORITY = { "SPECIAL", "EQUIPMENT", "GEM", "MATERIAL", "GOLD", "NORMAL" };
+
+    /**
+     * Reward là event reward khi drop_group = EVENT hoặc có event_key.
+     * Safety: nếu web Phase 2 chưa deploy, DB default là NORMAL,
+     * reward có event_key vẫn cần vào event pool.
+     */
+    private static boolean isEventReward(MobReward reward) {
+        return "EVENT".equals(reward.dropGroup)
+                || (reward.eventKey != null && !reward.eventKey.isEmpty());
+    }
+
+    /**
      * Lấy danh sách vật phẩm rơi khi quái chết
+     * Mỗi reward tự roll rate, candidate cùng group ưu tiên chọn 1 winner
+     * Tối đa 1 reward thường + 1 reward event mỗi lần quái chết
      * 
      * @param player Người chơi giết quái
      * @param mob    Quái bị giết
@@ -110,7 +160,9 @@ public class MobRewardService {
 
         Player dropOwner = getRealPlayer(player);
 
-        List<MobReward> potentialRewards = new ArrayList<>();
+        // 1. Lọc reward theo mob/map/event/gender/condition, tách theo dropGroup
+        List<MobReward> normalRewards = new ArrayList<>();
+        List<MobReward> eventRewards = new ArrayList<>();
         for (MobReward reward : rewards) {
             if (reward.mobId != -1 && reward.mobId != mobTempId) {
                 continue;
@@ -133,60 +185,83 @@ public class MobRewardService {
             if (reward.conditionType != null && !checkCondition(reward.conditionType, dropOwner, player, mob)) {
                 continue;
             }
-            potentialRewards.add(reward);
-        }
 
-        if (potentialRewards.isEmpty()) {
-            return drops;
-        }
-
-        // 2. Tách vật phẩm thường và vật phẩm sự kiện
-        List<MobReward> normalRewards = new ArrayList<>();
-        List<MobReward> eventRewards = new ArrayList<>();
-        for (MobReward reward : potentialRewards) {
-            if (reward.eventKey != null && !reward.eventKey.isEmpty()) {
+            if (isEventReward(reward)) {
                 eventRewards.add(reward);
             } else {
                 normalRewards.add(reward);
             }
         }
 
-        if (!normalRewards.isEmpty()) {
-            MobReward selectedReward = normalRewards.get(Util.nextInt(normalRewards.size()));
-            processRewardDrop(selectedReward, drops, zone, x, yEnd, dropOwner, pt4la);
+        // 2. Roll từng normal reward độc lập, thu thập candidate
+        List<MobReward> normalCandidates = collectCandidates(normalRewards, pt4la);
+
+        // 3. Chọn winner normal theo group priority
+        if (!normalCandidates.isEmpty()) {
+            MobReward winner = pickWinnerByPriority(normalCandidates);
+            processRewardDrop(winner, drops, zone, x, yEnd, dropOwner);
         }
 
-        if (!eventRewards.isEmpty()) {
-            MobReward selectedEventReward = eventRewards.get(Util.nextInt(eventRewards.size()));
-            processRewardDrop(selectedEventReward, drops, zone, x, yEnd, dropOwner, pt4la);
+        // 4. Roll từng event reward, chọn winner ngẫu nhiên
+        List<MobReward> eventCandidates = collectCandidates(eventRewards, pt4la);
+        if (!eventCandidates.isEmpty()) {
+            MobReward winner = eventCandidates.get(Util.nextInt(eventCandidates.size()));
+            processRewardDrop(winner, drops, zone, x, yEnd, dropOwner);
         }
 
         return drops;
     }
 
     /**
-     * Xử lý drop cho 1 reward đã chọn: xét tỷ lệ rơi, tạo ItemMap nếu trúng
+     * Roll rate cho từng reward (rate / pt4la), trả về danh sách candidate trúng roll.
      */
-    private void processRewardDrop(MobReward reward, List<ItemMap> drops, Zone zone,
-            int x, int yEnd, Player realPlayer, int pt4la) {
-        try {
-            // Tính tỷ lệ rơi (có nhân hệ số pt4la)
+    private List<MobReward> collectCandidates(List<MobReward> rewards, int pt4la) {
+        List<MobReward> candidates = new ArrayList<>();
+        for (MobReward reward : rewards) {
             int adjustedRate = reward.rate / pt4la;
             if (adjustedRate < 1)
                 adjustedRate = 1;
-
             if (Util.isTrue(1, adjustedRate)) {
-                // Tạo ItemMap
-                ItemMap itemMap = createItemMap(reward, zone, x, yEnd, realPlayer.id);
-                if (itemMap != null) {
-                    drops.add(itemMap);
+                candidates.add(reward);
+            }
+        }
+        return candidates;
+    }
 
-                    // Thông báo toàn server nếu cần
-                    if (reward.notifyGlobal) {
-                        ServerNotify.gI().notify(realPlayer.name + " vừa nhặt được "
-                                + itemMap.itemTemplate.name + " tại "
-                                + zone.map.mapName + " khu " + zone.zoneId);
-                    }
+    /**
+     * Chọn 1 winner từ candidate theo group priority.
+     * SPECIAL > EQUIPMENT > GEM > MATERIAL > GOLD > NORMAL.
+     * Nếu nhiều candidate cùng group priority, chọn random 1.
+     */
+    private MobReward pickWinnerByPriority(List<MobReward> candidates) {
+        for (String group : GROUP_PRIORITY) {
+            List<MobReward> grouped = new ArrayList<>();
+            for (MobReward r : candidates) {
+                if (group.equals(r.dropGroup)) {
+                    grouped.add(r);
+                }
+            }
+            if (!grouped.isEmpty()) {
+                return grouped.get(Util.nextInt(grouped.size()));
+            }
+        }
+        return candidates.get(0);
+    }
+
+    /**
+     * Xử lý drop cho 1 reward đã thắng: tạo ItemMap và thêm vào danh sách rơi.
+     */
+    private void processRewardDrop(MobReward reward, List<ItemMap> drops, Zone zone,
+            int x, int yEnd, Player realPlayer) {
+        try {
+            ItemMap itemMap = createItemMap(reward, zone, x, yEnd, realPlayer.id);
+            if (itemMap != null) {
+                drops.add(itemMap);
+
+                if (reward.notifyGlobal) {
+                    ServerNotify.gI().notify(realPlayer.name + " vừa nhặt được "
+                            + itemMap.itemTemplate.name + " tại "
+                            + zone.map.mapName + " khu " + zone.zoneId);
                 }
             }
         } catch (Exception e) {
@@ -304,9 +379,9 @@ public class MobRewardService {
 
         ItemMap itemMap = new ItemMap(zone, itemId, quantity, x, yEnd, playerId);
 
-        // Add options từ config
-        for (ItemOption opt : reward.options) {
-            itemMap.options.add(new ItemOption(opt.optionTemplate.id, opt.param));
+        List<MobRewardOption> opts = reward.itemOptions.getOrDefault(itemId, reward.defaultOptions);
+        for (MobRewardOption opt : opts) {
+            itemMap.options.add(new ItemOption(opt.id, opt.resolveParam()));
         }
 
         return itemMap;
