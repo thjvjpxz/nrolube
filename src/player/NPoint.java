@@ -2930,23 +2930,20 @@ public class NPoint {
     }
 
     public boolean getDoneLevel(int level) {
-        int j = 0;
-        for (int i = 0; i < this.player.inventory.itemsBody.size(); i++) {
-            if (i < 5) {
-                Item item = this.player.inventory.itemsBody.get(i);
-                if (item == null || item.template == null) {
-                    return false;
-                }
-                ItemOption itemOption = findParam(item, 72);
-                if (itemOption != null && itemOption.param >= level) {
-                    j++;
-                }
-                if (j >= 4) {
-                    return true;
-                }
+        if (this.player.inventory.itemsBody.size() < 5) {
+            return false;
+        }
+        for (int i = 0; i < 5; i++) {
+            Item item = this.player.inventory.itemsBody.get(i);
+            if (item == null || item.template == null) {
+                return false;
+            }
+            ItemOption itemOption = findParam(item, 72);
+            if (itemOption == null || itemOption.param < level) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     public ItemOption findParam(Item item, int id) {
