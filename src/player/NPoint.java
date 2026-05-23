@@ -3380,4 +3380,38 @@ public class NPoint {
         this.tlDameAttMob = null;
         this.tlTNSM = null;
     }
+
+    public int[] getSecondaryStats() {
+        return new int[]{
+                sumList(this.tlHp),
+                sumList(this.tlMp),
+                sumList(this.tlDame),
+                this.tlGiap,
+                this.tlSDCM,
+                sumList(this.tlTNSM),
+                this.tlGold,
+                this.tlNeDon,
+                this.tlPST,
+                this.tlHutHp,
+                this.tlHutMp,
+                this.tlHutHpMob,
+                this.tlHutHpMpXQ,
+                this.tlxgc,
+                this.tlxgcc,
+                this.tlchinhxac,
+                this.speedat,
+                this.voHieuChuong
+        };
+    }
+
+    private static int sumList(List<Integer> list) {
+        if (list == null || list.isEmpty()) {
+            return 0;
+        }
+        int sum = 0;
+        for (Integer v : list) {
+            sum += v;
+        }
+        return sum;
+    }
 }

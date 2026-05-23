@@ -667,6 +667,9 @@ public class Service {
                 msg.writer().writeShort(100);
                 msg.writer().writeShort(player.nPoint.defg);
                 msg.writer().writeByte(player.nPoint.critg);
+                for (int stat : player.nPoint.getSecondaryStats()) {
+                    msg.writer().writeInt(stat);
+                }
                 player.sendMessage(msg);
                 msg.cleanup();
             } catch (Exception e) {
