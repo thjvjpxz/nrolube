@@ -3024,14 +3024,26 @@ public class NPoint {
             // tiemNang -= ((long) tiemNang * 20 / 100);
             // }
             if (this.player.isPet) {
-                if (((Pet) this.player).master.charms.tdDeTu > System.currentTimeMillis()) {
-                    tiemNang += tn * 2;
+                Player master = ((Pet) this.player).master;
+                long tnPet = tn;
+                if (master.charms.tdTriTue > System.currentTimeMillis()) {
+                    tnPet *= 2;
                 }
-                if (((Pet) this.player).itemTime.lastTimeBuax2DeTu > System.currentTimeMillis()) {
-                    tiemNang += tn * 2;
+                if (master.charms.tdTriTue3 > System.currentTimeMillis()) {
+                    tnPet *= 3;
                 }
-                if (((Pet) this.player).master.nPoint != null && ((Pet) this.player).master.nPoint.tlTNSMPet > 0) {
-                    tiemNang += tn / 100 * (((Pet) this.player).master.nPoint.tlTNSMPet + 100);
+                if (master.charms.tdTriTue4 > System.currentTimeMillis()) {
+                    tnPet *= 4;
+                }
+                if (master.charms.tdDeTu > System.currentTimeMillis()) {
+                    tnPet *= 2;
+                }
+                if (master.itemTime != null && master.itemTime.isUseBuax2DeTu) {
+                    tnPet *= 2;
+                }
+                tiemNang += tnPet - tn;
+                if (master.nPoint != null && master.nPoint.tlTNSMPet > 0) {
+                    tiemNang += tn / 100 * (master.nPoint.tlTNSMPet + 100);
                 }
 
             }

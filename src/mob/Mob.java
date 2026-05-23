@@ -236,7 +236,7 @@ public class Mob {
             tiemNang = 1;
         }
         if (pl.nPoint != null) {
-            tiemNang = (int) pl.nPoint.calSucManhTiemNang(tiemNang);
+            tiemNang = pl.nPoint.calSucManhTiemNang(tiemNang);
         } else {
             return 0;
         }

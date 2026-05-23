@@ -856,10 +856,9 @@ public class Service {
     }
 
     public void addSMTN(Player player, byte type, long param, boolean isOri) {
-        // if (player.nPoint.power >= 100_000_000_000L) {
-        // player.nPoint.power = 100_000_000_000L;
-        // return;
-        // }
+        if (param <= 0) {
+            return;
+        }
         if (player.isPet) {
             if (player.nPoint.power > player.nPoint.getPowerLimit()) {
                 return;
@@ -869,10 +868,6 @@ public class Service {
             Player master = ((Pet) player).master;
 
             param = master.nPoint.calSubTNSM(param);
-            if (master.nPoint.power < master.nPoint.getPowerLimit()) {
-                master.nPoint.powerUp(param);
-            }
-            master.nPoint.tiemNangUp(param);
             addSMTN(master, type, param, true);
         } else {
             if (player.nPoint.power > player.nPoint.getPowerLimit()) {
