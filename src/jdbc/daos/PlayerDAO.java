@@ -468,6 +468,19 @@ public class PlayerDAO {
         }
     }
 
+    public static boolean updatePlayerAndReturn(Player player) {
+        if (player == null || player.id <= 0L) {
+            return false;
+        }
+        ReentrantLock lock = saveLock(player.id);
+        lock.lock();
+        try {
+            return doUpdatePlayer(player, false);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public static boolean updatePlayerForLogout(Player player) {
         if (player == null) {
             Logger.warning(SAVE_TRACE + "logout save skipped: player=null\n");

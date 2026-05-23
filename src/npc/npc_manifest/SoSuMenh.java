@@ -2,37 +2,20 @@ package npc.npc_manifest;
 
 
 import consts.ConstNpc;
-import consts.cn;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import jdbc.DBConnecter;
 import jdbc.daos.PlayerDAO;
-
 import npc.Npc;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
-import player.Archivement;
 import player.Player;
 import services.InventoryService;
-import services.ItemService;
 import services.NpcService;
-import services.PetService;
 import services.Service;
 import services.func.TopService;
 import shop.ShopService;
 import sosumenh.SoSuMenhManager;
 import sosumenh.SoSuMenhService;
 import sosumenh.SoSuMenhTaskMain;
-import sosumenh.SoSuMenhTaskTemplate;
 
 public class SoSuMenh extends Npc {
 
@@ -72,90 +55,11 @@ public class SoSuMenh extends Npc {
 //                    "Xem xếp hạng"
 //                    "Xem thông tin hiện tại"
                     case 0 -> {
-                        JSONArray dataArray;
-                        JSONObject dataObject;
-                        PreparedStatement ps = null;
-                        ResultSet rs = null;
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("|0|꧁__Sổ sứ mệnh nhận quà theo level_꧂\n");
-                        try ( Connection con2 = DBConnecter.getConnectionServer()) {
-                            ps = con2.prepareStatement("SELECT * FROM so_su_menh_reward");
-                            rs = ps.executeQuery();
-
-                            while (rs.next()) {
-                                sb.append("|0|꧁__Sổ thường_꧂\n");
-                                dataArray = (JSONArray) JSONValue.parse(rs.getString("items"));
-                                sb.append("◥_____________________◤\n|7|");
-                                sb.append("✎▶Level ").append(rs.getInt("level"))
-                                        .append("◀\n|0|");
-                                sb.append("◢¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯◣\n|0|");
-
-                                for (int i = 0; i < dataArray.size(); i++) {
-                                    dataObject = (JSONObject) JSONValue.parse(String.valueOf(dataArray.get(i)));
-                                    int tempid = Integer.parseInt(String.valueOf(dataObject.get("temp_id")));
-                                    int quantity = Integer.parseInt(String.valueOf(dataObject.get("quantity")));
-                                    JSONArray optionsArray = (JSONArray) dataObject.get("options");
-
-                                    sb.append("▷ x").append(quantity).append(" ")
-                                            .append(ItemService.gI().getTemplate(tempid).name).append("\n|4|");
-
-                                    if (optionsArray != null) {
-                                        for (int j = 0; j < optionsArray.size(); j++) {
-                                            JSONObject optionObject = (JSONObject) optionsArray.get(j);
-                                            int optionId = Integer.parseInt(String.valueOf(optionObject.get("id")));
-                                            int param = Integer.parseInt(String.valueOf(optionObject.get("param")));
-
-                                            String optionTemplateName = ItemService.gI().getItemOptionTemplate(optionId).name;
-                                            String formattedOption = optionTemplateName.replace("#", String.valueOf(param));
-
-                                            sb.append(formattedOption).append("\n");
-                                        }
-                                    }
-                                    sb.append("\n");
-                                }
-
-                                sb.append("|0|꧁__Sổ Vip_꧂\n");
-                                dataArray = (JSONArray) JSONValue.parse(rs.getString("items2"));
-                                sb.append("◥_____________________◤\n|7|");
-                                sb.append("✎▶Level ").append(rs.getInt("level"))
-                                        .append("◀\n");
-                                sb.append("◢¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯◣\n");
-
-                                for (int i = 0; i < dataArray.size(); i++) {
-                                    dataObject = (JSONObject) JSONValue.parse(String.valueOf(dataArray.get(i)));
-                                    int tempid = Integer.parseInt(String.valueOf(dataObject.get("temp_id")));
-                                    int quantity = Integer.parseInt(String.valueOf(dataObject.get("quantity")));
-                                    JSONArray optionsArray = (JSONArray) dataObject.get("options");
-
-                                    sb.append("▷ x").append(quantity).append(" ")
-                                            .append(ItemService.gI().getTemplate(tempid).name).append("\n|4|");
-
-                                    if (optionsArray != null) {
-                                        for (int j = 0; j < optionsArray.size(); j++) {
-                                            JSONObject optionObject = (JSONObject) optionsArray.get(j);
-                                            int optionId = Integer.parseInt(String.valueOf(optionObject.get("id")));
-                                            int param = Integer.parseInt(String.valueOf(optionObject.get("param")));
-
-                                            String optionTemplateName = ItemService.gI().getItemOptionTemplate(optionId).name;
-                                            String formattedOption = optionTemplateName.replace("#", String.valueOf(param));
-
-                                            sb.append(formattedOption).append("\n");
-                                        }
-                                    }
-                                    sb.append("\n");
-                                }
-                            }
-                        } catch (SQLException ex) {
-                            Logger.getLogger(SoSuMenh.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-
-                        Service.gI().sendThongBaoFromAdmin(player, sb.toString());
+                        SoSuMenhService.getInstance().openPanel(player);
                         break;
                     }
                     case 1 -> {
-                        this.createOtherMenu(player, 9999,
-                                "Nhận thưởng sổ ở đey",
-                                "Sổ thường", "Sổ Vip", "Từ chối");
+                        SoSuMenhService.getInstance().openPanel(player);
                         break;
                     }
                     case 2 -> {
@@ -254,18 +158,6 @@ public class SoSuMenh extends Npc {
                         break;
                     case 2:
                         break;
-                }
-            }
-            else {
-                switch (select) {
-                    case 0 -> {
-                        SoSuMenhService.getInstance().loadAchievements(player, false);
-                        break;
-                    }
-                    case 1 -> {
-                        SoSuMenhService.getInstance().loadAchievements(player, true);
-                        break;
-                    }
                 }
             }
         }

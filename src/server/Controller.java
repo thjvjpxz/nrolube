@@ -1076,20 +1076,23 @@ public class Controller implements IMessageHandler {
                 // break;
                 case -76:
                     if (player != null && _msg.reader().available() >= 1) {
-                        // byte index = _msg.reader().readByte();
-                        if (player.zone != null && player.zone.map != null && player.typeRecvieArchiment == 2) {
-                            ArchivementSucManh.gI().receiveGem(_msg.reader().readByte(), player);
+                        byte first = _msg.reader().readByte();
+                        if (first == 6) {
+                            if (_msg.reader().available() >= 2) {
+                                int level = _msg.reader().readByte();
+                                int lane = _msg.reader().readByte();
+                                SoSuMenhService.getInstance().claimOne(player, level, lane);
+                            }
+                        } else if (first == 7) {
+                            SoSuMenhService.getInstance().claimAll(player);
+                        } else if (player.zone != null && player.zone.map != null && player.typeRecvieArchiment == 2) {
+                            ArchivementSucManh.gI().receiveGem(first, player);
                         } else if (player.zone != null && player.zone.map != null && player.typeRecvieArchiment == 1) {
-                            Archivement.gI().receiveGem(_msg.reader().readByte(), player);
+                            Archivement.gI().receiveGem(first, player);
                         } else if (player.zone != null && player.zone.map != null && player.typeRecvieArchiment == 0) {
-                            AchievementService.gI().confirmAchievement(player, _msg.reader().readByte());
-                        } else if (player.zone != null && player.zone.map != null && player.typeRecvieArchiment == 3) {
-                            SoSuMenhService.getInstance().receive(_msg.reader().readByte(), player);
-                        } else if (player.zone != null && player.zone.map != null && player.typeRecvieArchiment == 4) {
-                            SoSuMenhService.getInstance().receiveVip(_msg.reader().readByte(), player);
+                            AchievementService.gI().confirmAchievement(player, first);
                         }
-
-                        // player.achievement.receiveGem(index);
+                        // typeRecvieArchiment 3/4 (SSM cũ) đã bị redirect sang action 6/7
                     }
                     break;
                 default:
