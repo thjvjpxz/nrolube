@@ -295,14 +295,16 @@ public class EffectSkillService {
 
     public void setIsMonkey(Player player) {
         EffectSkillService.gI().sendEffectMonkey(player);
-        int timeMonkey = SkillUtil.getTimeMonkey(player.playerSkill.skillSelect.point);
+        Skill monkeySkill = SkillUtil.getSkillbyId(player, Skill.BIEN_KHI);
+        int monkeyLevel = monkeySkill != null ? monkeySkill.point : player.playerSkill.skillSelect.point;
+        int timeMonkey = SkillUtil.getTimeMonkey(monkeyLevel);
         if (player.setClothes.cadic == 5) {
             timeMonkey *= 5;
         }
         player.effectSkill.isMonkey = true;
         player.effectSkill.timeMonkey = timeMonkey;
         player.effectSkill.lastTimeUpMonkey = System.currentTimeMillis();
-        player.effectSkill.levelMonkey = (byte) player.playerSkill.skillSelect.point;
+        player.effectSkill.levelMonkey = (byte) monkeyLevel;
         player.nPoint.setHp(Util.maxIntValue(player.nPoint.hp * 2));
         Service.gI().Send_Caitrang(player);
         if (!player.isPet) {
