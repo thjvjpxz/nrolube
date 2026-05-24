@@ -21,7 +21,7 @@ public class Bossgido extends Boss {
         super(-99, new BossData(
                 "MORO",
                 ConstPlayer.TRAI_DAT,
-                new short[]{1834, 1835, 1836, 157, -1, -1},
+                new short[]{1890, 1893, 1894, 157, -1, -1},
                 100000,
                 new long[]{2_000_000_000},
                 new int[]{170,171},
