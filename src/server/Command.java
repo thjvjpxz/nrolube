@@ -30,6 +30,7 @@ import player.LinhDanhThue;
 import player.badges.BadgesData;
 import services.InventoryService;
 import services.ItemService;
+import services.MapEntityReloadService;
 import services.NpcService;
 import services.PetService;
 import services.Service;
@@ -69,6 +70,10 @@ public class Command {
             } else if (text.equals("redrop")) {
                 mob.MobRewardService.gI().reload();
                 Service.gI().sendThongBao(player, "Đã reload drop (" + mob.MobRewardService.gI().getRewardCount() + ")");
+                return true;
+            } else if (text.equals("remap")) {
+                MapEntityReloadService.RemapResult result = MapEntityReloadService.gI().reload();
+                Service.gI().sendThongBao(player, result.toMessage());
                 return true;
             } else if (text.equals("next nv")) {
                 // Tăng id nhiệm vụ lên 1: [1,0,0,xxx] => [2,0,0,xxx]

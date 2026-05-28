@@ -158,6 +158,24 @@ public class Map implements Runnable {
         }
     }
 
+    public int reloadNpc(byte[] npcId, short[] npcX, short[] npcY) {
+        this.npcs = new ArrayList<>();
+        for (int i = 0; i < npcId.length; i++) {
+            try {
+                Npc npc = NpcFactory.createNPC(this.mapId, 1, npcX[i], npcY[i], npcId[i]);
+                if (npc != null) {
+                    this.npcs.add(npc);
+                } else {
+                    Logger.warning("[remap] NpcFactory trả null mapId=" + this.mapId + ", npcId=" + npcId[i] + "\n");
+                }
+            } catch (Exception e) {
+                Logger.logException(Map.class, e,
+                        "Lỗi reload NPC mapId=" + this.mapId + ", npcId=" + npcId[i]);
+            }
+        }
+        return this.npcs.size();
+    }
+
     @Override
     public void run() {
         while (true) {
@@ -233,6 +251,18 @@ public class Map implements Runnable {
                 }
             }
         }
+    }
+
+    public int reloadMob(byte[] mobTemp, byte[] mobLevel, int[] mobHp, short[] mobX, short[] mobY) {
+        for (Zone zone : this.zones) {
+            zone.mobs.clear();
+        }
+        initMob(mobTemp, mobLevel, mobHp, mobX, mobY);
+        int count = 0;
+        for (Zone zone : this.zones) {
+            count += zone.mobs.size();
+        }
+        return count;
     }
 
     public void initMob(List<Mob> mobs) {
