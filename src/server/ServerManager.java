@@ -64,6 +64,7 @@ import services.func.TopService;
 public class ServerManager {
 
     private static final boolean IS_LINUX_OR_HEADLESS;
+    private static final int AUTO_RESTART_EXIT_CODE = 88;
 
     static {
         boolean isLinux = System.getProperty("os.name", "").toLowerCase().contains("linux");
@@ -431,7 +432,7 @@ public class ServerManager {
     /**
      * Saves persistent game state and tears down connections. Used by maintenance flow and JVM shutdown (SIGTERM).
      *
-     * @param exitProcess if {@code true}, runs legacy restart.bat hook and {@link System#exit(int)} (maintenance path).
+     * @param exitProcess if {@code true}, exits for maintenance restart and may run legacy restart.bat hook.
      *                    If {@code false}, only saves and returns (shutdown-hook path; JVM exit follows naturally).
      */
     private void shutdownGracefully(boolean exitProcess) {
@@ -466,20 +467,15 @@ public class ServerManager {
             return;
         }
 
-        if (IS_LINUX_OR_HEADLESS) {
-            try {
-                Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c",
-                    "sleep 5; ./serverctl.sh start-java >> logs/autorestart.log 2>&1 &"});
-            } catch (IOException e) {
-                Logger.error("Không thể spawn auto restart: " + e.getMessage() + "\n");
-            }
-        } else {
+        if (!IS_LINUX_OR_HEADLESS) {
             try {
                 String batchFilePath = "restart.bat";
                 FileRunner.runBatchFile(batchFilePath);
             } catch (IOException e) {
             }
+            System.exit(0);
         }
-        System.exit(0);
+        Logger.warning(">> Maintenance restart requested; serverctl.sh will start Java again.\n");
+        System.exit(AUTO_RESTART_EXIT_CODE);
     }
 }

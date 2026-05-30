@@ -18,6 +18,7 @@ JAVA_XMS="1G"
 JAVA_XMX="1G"
 JAVA_XSS="512k"
 JAVA_GC_OPTS="-XX:+UseZGC"
+AUTO_RESTART_EXIT_CODE="88"
 
 MYSQL_HOST="localhost"
 MYSQL_PORT="3306"
@@ -592,7 +593,19 @@ is_running() {
 
 run_java_foreground() {
   echo "[Run] Starting foreground..."
-  java -Xms"$JAVA_XMS" -Xmx"$JAVA_XMX" -Xss"$JAVA_XSS" $JAVA_GC_OPTS -cp "$JAR_PATH:lib/*" "$MAIN_CLASS"
+  while true; do
+    local status
+    if java -Xms"$JAVA_XMS" -Xmx"$JAVA_XMX" -Xss"$JAVA_XSS" $JAVA_GC_OPTS -cp "$JAR_PATH:lib/*" "$MAIN_CLASS"; then
+      status=0
+    else
+      status=$?
+    fi
+    if [[ "$status" -ne "$AUTO_RESTART_EXIT_CODE" ]]; then
+      return "$status"
+    fi
+    echo "[AutoRestart] Java exited with maintenance restart code; restarting in 5s..."
+    sleep 5
+  done
 }
 
 start_java_only() {
@@ -609,8 +622,22 @@ start_java_background() {
   fi
 
   echo "[Start] Starting background..."
-  nohup java -Xms"$JAVA_XMS" -Xmx"$JAVA_XMX" -Xss"$JAVA_XSS" $JAVA_GC_OPTS \
-    -cp "$JAR_PATH:lib/*" "$MAIN_CLASS" >>"$LOG_FILE" 2>&1 &
+  nohup bash -c '
+    set -u
+    trap '\''[[ -n "${child_pid:-}" ]] && kill "$child_pid" 2>/dev/null || true; exit 143'\'' TERM INT
+    while true; do
+      java -Xms"$1" -Xmx"$2" -Xss"$3" ${4:-} -cp "$5" "$6" &
+      child_pid=$!
+      wait "$child_pid"
+      status=$?
+      child_pid=""
+      if [[ "$status" -ne "$7" ]]; then
+        exit "$status"
+      fi
+      echo "[AutoRestart] Java exited with maintenance restart code; restarting in 5s..."
+      sleep 5
+    done
+  ' bash "$JAVA_XMS" "$JAVA_XMX" "$JAVA_XSS" "$JAVA_GC_OPTS" "$JAR_PATH:lib/*" "$MAIN_CLASS" "$AUTO_RESTART_EXIT_CODE" >>"$LOG_FILE" 2>&1 &
 
   local pid=$!
   echo "$pid" >"$PID_FILE"
